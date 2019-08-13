@@ -491,5 +491,243 @@
 
 ## 1.5.1. 웹 애플리케이션 실습
 
+**출처** : [https://whitepaek.tistory.com/12](https://whitepaek.tistory.com/12)
 
+* **Tomcat 다운받는 방법(MAC)**
 
+  <img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile1.uf.tistory.com%2Fimage%2F998379385BD40D521BB880">
+
+* **IntelliJ 에서 아파치 톰캣 설정 및 JSP 실행 방법**
+
+  1. 새로운 프로젝트를 만든다.
+
+  <img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile9.uf.tistory.com%2Fimage%2F99D5713D5C25055A06FF78" width=600>
+
+  2. Configuration 설정
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile5.uf.tistory.com%2Fimage%2F99A17F415C2506CD19C4BE">
+
+* 좌측에 Project 목록에서 "index.jsp" 파일을 클릭하고, "\<body> \</body>" 태그 안에 자신이 출력하고 싶은 결과를 간략하게 작성한다.
+* 우측 상단에 "Add Configuration…" 을 클릭한다.
+
+3. "+" 클릭
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile24.uf.tistory.com%2Fimage%2F99D6FD3D5C25076C0F0B03">
+
+4. "Add New Configuration" 목록이 나오면 하단의 "35 items more" 클릭
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile21.uf.tistory.com%2Fimage%2F99550C335C2507BB0EEBDB">
+
+5. Tomcat Server 클릭 => Local 클릭
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile7.uf.tistory.com%2Fimage%2F9921F54B5C2508430506B8">
+
+6. Tomcat Server의 Configuration 클릭
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile29.uf.tistory.com%2Fimage%2F9930E14F5C2508B91EA992">
+
+7. Apache Tomcat 디렉토리에 있는 톰캣 라이브러리 선택
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile6.uf.tistory.com%2Fimage%2F9971D14B5BD531B92CFA61">
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile7.uf.tistory.com%2Fimage%2F99B7AB455C2509BB25CA1B">
+
+8. Application server에 자신이 선택한 앱이 설정되었으면 "Fix" 클릭
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile21.uf.tistory.com%2Fimage%2F998F214F5C250A71333FEC">
+
+9. "Application context"를 "/"로 수정 후 "OK" 클릭 (브라우저 기본 URL을 "localhost:8080" 으로 설정해주기 위함)
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile2.uf.tistory.com%2Fimage%2F9909CC4F5C250B1B206503">
+
+10. 실행
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile23.uf.tistory.com%2Fimage%2F9901DD405C250C4F0198BA">
+
+11. 프로젝트 수정 후 톰갯을 재시작하지 않고 브라우저 새로고침으로 수정된 결과 반영
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile29.uf.tistory.com%2Fimage%2F99FA65375C250CE8019938">
+
+</br>
+
+* **웹 애플리케이션 실행**
+
+<img src="../capture/스크린샷 2019-08-13 오후 2.04.36.png" width=500>
+
+<img src="../capture/스크린샷 2019-08-13 오후 2.05.29.png" width=500>
+
+</br>
+
+## 1.5.2. 웹 애플리케이션의 특징
+
+웹 애플리케이션 방식이 기존의 C/S 환경과 비교해서 무엇이 다른지 살펴보자.
+
+</br>
+
+* **배치**
+
+  * 기존 C/S 환경
+
+    <img src="../capture/스크린샷 2019-08-13 오후 2.09.25.png" width=500>
+
+    > 비즈니스 처리 부분을 서버에 배치하고 UI 처리 부분을 클라이언트에 배치하였기 때문에, UI가 변경 되면 클라이언트 프로그램을 다시 설치해야 한다.
+
+  * 웹 환경
+
+    <img src="../capture/스크린샷 2019-08-13 오후 2.11.50.png" width=700>
+
+    > 비즈니스 로직과 UI 로직을 모두 서버에 배치하여 기능이 추가되거나 변경되더라도 서버쪽만 바꾸면 된다. 하지만 애플리케이션을 실행할 때마다 UI 로직을 내려받아야 하기 때문에 네트워크 오버헤드가 발생한다.
+
+</br>
+
+* **실행**
+
+  웹 브라우저가 설치되어 있고 인터넷에 연결되어 있다면 어디에서라도 애플리케이션을 실행할 수 있다.
+
+  ```sequence
+  클라이언트->서버: 1. 사용자 입력폼을 요청한다
+  서버->서버: 2. 입력폼을 만든다.
+  서버-->클라이언트: 3. 입력폼을 전달한다.
+  클라이언트->클라이언트: 4. 입력폼을 화면에 출력한다.
+  클라이언트->서버: 5. 사용자가 입력한 값을 보낸다.
+  서버->서버: 6. 계산 후 결과 화면을 만든다.
+  서버-->클라이언트: 7. 결과 화면을 출력한다.
+  ```
+
+</br>
+
+* **개발**
+
+  * 기존 C/S 환경에서의 개발
+
+  <img src="../capture/스크린샷 2019-08-13 오후 11.02.00.png" width=700>
+
+  > 네트워크 프로그래밍과 멀티 스레드 프로그래밍이 필요하다
+
+  * 웝 브라우저와 웹 서버의 도입
+
+  <img src="../capture/스크린샷 2019-08-13 오후 11.06.25.png">
+
+  > 웹 브라우저와 웹 서버가 네트워크, 멀티 스레드 프로그래밍을 대신 처리해줘서 개발자는 단지 어떤 업무를 처리하고 무엇을 출력할 것인가에 대해서만 개발하면 된다.
+
+</br>
+
+* **클라이언트 소스 분석**
+
+  calculator.html
+
+  ```html
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <title>Insert title here</title>
+  </head>
+  <body>
+  <h1>계산기</h1>
+  <form action="calc" method="post">
+      <input type="text" name="v1" style="width: 50px;">
+      <select name="op">
+          <option value="+">+</option>
+          <option value="-">-</option>
+          <option value="*">*</option>
+          <option value="/">/</option>
+      </select>
+      <input type="text" name="v2" style="width: 50px;">
+      <input type="submit" value="=">
+  </form>
+  </body>
+  </html>
+  ```
+
+  * **\<h1>계산기\</h1>** : h1 태그는 화면에 제목을 표시할 때 사용한다.
+  * **\<form>…\</form>** : form 태그는 입력폼을 만든다.
+  * **\<input type="입력유형">** : input 태그는 유형에 따라 입력상자(text)나 체크 박스(checkbox), 라디오 버튼(radio), 암호 입력상자(password), 데이터 전송 버튼(submit), 입력상자 초기화 버튼(reset), 파일 업로드 버튼(file) 등을 만들 때 사용
+  * **\<select>…\</select>** : select 태그는 여러 항목 중에서 하나를 선택하는 콤보 상자를 만든다.
+
+</br>
+
+* **서버 소스 분석**
+
+  CalculatorServlet.java
+
+  ```java
+  package understanding_web_applications;
+  
+  import java.io.IOException;
+  import java.io.PrintWriter;
+  
+  import javax.servlet.GenericServlet;
+  import javax.servlet.ServletException;
+  import javax.servlet.ServletRequest;
+  import javax.servlet.ServletResponse;
+  import javax.servlet.annotation.WebServlet;
+  
+  @WebServlet("/calc")
+  @SuppressWarnings("serial")
+  public class CalculatorServlet extends GenericServlet {
+  
+    @Override
+    public void service(
+        ServletRequest request, ServletResponse response)
+        throws ServletException, IOException {
+      String operator = request.getParameter("op");
+      int v1 = Integer.parseInt(request.getParameter("v1"));
+      int v2 = Integer.parseInt(request.getParameter("v2"));
+      int result = 0;
+  
+      response.setContentType("text/html;charset=UTF-8");
+      PrintWriter out = response.getWriter();
+  
+      switch (operator) {
+        case "+":
+          result = v1 + v2;
+          break;
+        case "-":
+          result = v1 - v2;
+          break;
+        case "*":
+          result = v1 * v2;
+          break;
+        case "/":
+          if (v2 == 0) {
+            out.println("0 으로 나눌 수 없습니다!");
+            return;
+          }
+  
+          result = v1 / v2;
+          break;
+      }
+  
+      out.println(v1 + " " + operator + " " + v2 + " = " + result);
+    }
+  
+  }
+  ```
+
+  > 클라이언트가 보낸 데이터를 받아서 연산을 수행하고 그 결과를 출력하는 클래스이다.
+
+</br>
+
+* **웹 애플리케이션의 등장 이유**
+
+  예전보다 더 자주 더 많이 시스템이 변경되기 때문에, 기존의 C/S 환경은 매번 클라이언트 프로그램을 재설치해야 하므로 이러한 문제를 처리할 방안으로 나온것이 웹 애플리케이션이다.
+
+</br>
+
+## 1.5.3. 문제점과 개선방안
+
+* **문제점**
+  * 매번 사용자가 출력 화면을 서버로부터 내려받아야 한다는점
+  * 이로 인해, 서버 및 네트워크 자원에 대한 오버헤드 발생
+* **개선 방안**
+  * **AJAX(Asynchronous JavaScrpit and XML)** : 같은 화면에서 데이터만 바뀔 때는, 서버에서 UI 전체를 받아오기 보다는 데이터만 받아오는 것이 효율적이다. 즉, 화면은 그대로 두고 데이터만 받아오는 기술이다.
+  * **변화에 유연한 대응이 가능한 애플리케이션 아키텍처** : 비즈니스의 변화에 유연하게 대응할 수 있는 구조로 애플리케이션을 설계해야 한다. (Ex: MVC 아키텍처, ...)
+
+</br>
+
+# 1.6. 정리
+
+* **'데스크톱 애플리케이션, 개인용 애플리케이션에서는 최고의 아키텍처'**
+* **"C/S 애플리케이션, 동시 작업을 요구하는 기업용 애플리케이션에 적합!"**
+* **"웹 애플리케이션, 매우 유연한 사용 환경을 제공, 플랫폼 간에 매끈한 연결 지원"**
