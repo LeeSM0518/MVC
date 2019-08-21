@@ -4,7 +4,7 @@ MVC 아키텍처, 마이바티스 학습 저장소
 # 목차
 01. [웹 애플리케이션의 이해](https://github.com/LeeSM0518/MVC/tree/master/src/understanding_web_applications)
 02. [웹 프로그래밍 기초 다지기](https://github.com/LeeSM0518/MVC/tree/master/webprogrammingbasic)
-03. 서블릿 프로그래밍
+03. [서블릿 프로그래밍](https://github.com/LeeSM0518/MVC/tree/master/servletprogramming)
 04. 서블릿과 JDBC
 05. MVC 아키텍처
 06. 미니 MVC 프레임워크 만들기
