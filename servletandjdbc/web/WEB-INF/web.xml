@@ -4,19 +4,6 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
     <display-name>Apache-Axis</display-name>
-
-    <!-- 서블릿 선언 -->
-    <servlet>
-        <servlet-name>MemberList</servlet-name>
-        <servlet-class>spms.servlets.MemberListServlet</servlet-class>
-    </servlet>
-
-    <!-- 서블릿을 URL 과 연결-->
-    <servlet-mapping>
-        <servlet-name>MemberList</servlet-name>
-        <url-pattern>/member</url-pattern>
-    </servlet-mapping>
-
     <servlet>
         <display-name>Apache-Axis Servlet</display-name>
         <servlet-name>AxisServlet</servlet-name>
