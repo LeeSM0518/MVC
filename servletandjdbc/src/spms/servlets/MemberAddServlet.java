@@ -49,17 +49,20 @@ public class MemberAddServlet extends HttpServlet {
       preparedStatement.setString(3, req.getParameter("name"));
       preparedStatement.executeUpdate();
 
-      resp.setContentType("text/html; charset=UTF-8");
-      PrintWriter out = resp.getWriter();
-      out.println("<html><head><title>회원등록결과</title>");
-      out.println("<meta http-equiv='Refresh' content='1; url=list'>");
-      out.println("<body>");
-      out.println("</head>");
-      out.println("<p>등록 성공입니다!</p>");
-      out.println("</body></html>");
+      resp.sendRedirect("list");
 
-      // 리프래시 정보를 응답 헤더에 추가
-      // resp.addHeader("Refresh", "1;url=list");
+      // 리다이렉트는 HTML 을 출력하지 않는다.
+//      resp.setContentType("text/html; charset=UTF-8");
+//      PrintWriter out = resp.getWriter();
+//      out.println("<html><head><title>회원등록결과</title>");
+//      out.println("<meta http-equiv='Refresh' content='1; url=list'>");
+//      out.println("<body>");
+//      out.println("</head>");
+//      out.println("<p>등록 성공입니다!</p>");
+//      out.println("</body></html>");
+//
+//      // 리프래시 정보를 응답 헤더에 추가
+//      // resp.addHeader("Refresh", "1;url=list");
 
     } catch (Exception e) {
       throw new ServletException(e);
