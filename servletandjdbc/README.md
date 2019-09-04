@@ -563,7 +563,7 @@ GET 요청에서는 매개변수의 값을 URL에 포함하여 보내는데 setC
 
 ## 4.5.1. 자동으로 회원 목록을 출력하기
 
-<img src="../../../../capture/스크린샷 2019-09-03 오후 10.36.55.png">
+<img src="../capture/스크린샷 2019-09-03 오후 10.36.55.png">
 
 (5) 웹 브라우저는 회원 등록 결과를 출력하고, 1초 후에 서버에 '회원 목록'을 요청한다.
 
@@ -1354,4 +1354,82 @@ web.xml이 아닌 서블릿 소스 코드에 어노테이션으로 서블릿 초
      ```
 
 <br>
+
+# 4.9. 필터 사용하기
+
+**필터는** 서블릿 실행 전후에 어떤 작업을 하고자 할 때 사용하는 기술이다. 
+
+- **필터 사용 예시**
+  - 클라이언트가 보낸 데이터의 암호를 해제
+  - 서블릿이 실행되기 전에 필요한 자원 준비
+  - 서블릿이 실행될 때마다 로그를 남김
+
+<br>
+
+- **필터의 실행**
+
+<img src="../capture/스크린샷 2019-09-04 오후 3.31.04.png">
+
+<br>
+
+## 4.9.1. 필터
+
+한글이 깨지는 것을 방지하기 위해 setCharacterEncoding()을 호출하여 메시지 바디의 데이터가 어떤 문자집합으로 인코딩되었는지 설정하였다. 하지만, 각 서블릿 마다 앞의 코드를 작성하는 것은 매우 번거로운 일이기 때문에 이럴 때 **서블릿 필터를** 이용하면 간단히 처리할 수 있다.
+
+<br>
+
+## 4.9.2. 필터 만들기
+
+- **Filter 인터페이스의 구현체**
+
+  <img src="../capture/스크린샷 2019-09-04 오후 5.49.07.png" width=500>
+
+<br>
+
+- **src/spms/filters/CharacterEncodingFilter.java**
+
+  ```java
+  package spms.filters;
+  
+  import javax.servlet.*;
+  import java.io.IOException;
+  
+  public class CharacterEncodingFilter implements Filter {
+  
+    private FilterConfig config;
+  
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+      this.config = filterConfig;
+    }
+  
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+      // 서블릿이 실행되기 전에 해야 할 작업 위치
+      servletRequest.setCharacterEncoding(config.getInitParameter("encoding"));
+      
+      // 다음 필터를 호출. 더이상 필터가 없다면 서블릿의 service()가 호출됨.
+      filterChain.doFilter(servletRequest, servletResponse);
+      
+      // 서블릿을 실행한 후, 클라이언트에게 응답하기 전에 해야할 작업 위치
+    }
+  
+    @Override
+    public void destroy() {}
+  
+  }
+  ```
+
+  - 필터는 서블릿과 마찬가지로 한 번 생성되면 웹 애플리케이션이 실행되는 동안 계속 유지된다.
+  - **init()** 메서드는 필터 객체가 생성되고 나서 **준비 작업을 위해 딱 한 번 호출된다.**
+  - **doFilter()** 메서드는 필터와 연결된 URL에 대해 요청이 들어오면 실행된다.
+  - **destroy()** 메서드는 서블릿 컨테이너가 웹 애플리케이션을 종료하기 전에 호출된다.
+
+<br>
+
+## 4.9.3. 필터의 구동
+
+Filter 인터페이스에 선언된 세 개의 메서드는 필터의 생명주기와 관련된 메서드이다.
+
+- **필터의 실행**
 
