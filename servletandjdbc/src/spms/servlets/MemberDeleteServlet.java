@@ -24,7 +24,7 @@ public class MemberDeleteServlet extends HttpServlet {
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    req.setCharacterEncoding("UTF-8");
+//    req.setCharacterEncoding("UTF-8");
     String query = "delete from members where mno=" + req.getParameter("no");
 
     try (Connection conn = DriverManager.getConnection(

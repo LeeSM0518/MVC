@@ -5,26 +5,26 @@
          version="4.0">
 
     <!-- 서블릿 선언 -->
-<!--    <servlet>-->
-<!--        <servlet-name>MemberUpdateServlet</servlet-name>-->
-<!--        <servlet-class>spms.servlets.MemberUpdateServlet</servlet-class>-->
-<!--        <init-param>-->
-<!--            <param-name>driver</param-name>-->
-<!--            <param-value>org.postgresql.Driver</param-value>-->
-<!--        </init-param>-->
-<!--        <init-param>-->
-<!--            <param-name>url</param-name>-->
-<!--            <param-value>jdbc:postgresql://arjuna.db.elephantsql.com:5432/</param-value>-->
-<!--        </init-param>-->
-<!--        <init-param>-->
-<!--            <param-name>username</param-name>-->
-<!--            <param-value>fsmfppcj</param-value>-->
-<!--        </init-param>-->
-<!--        <init-param>-->
-<!--            <param-name>password</param-name>-->
-<!--            <param-value>opXwqwWLpezpFQHX6OWFl3mQW1xf0VqH</param-value>-->
-<!--        </init-param>-->
-<!--    </servlet>-->
+    <!--    <servlet>-->
+    <!--        <servlet-name>MemberUpdateServlet</servlet-name>-->
+    <!--        <servlet-class>spms.servlets.MemberUpdateServlet</servlet-class>-->
+    <!--        <init-param>-->
+    <!--            <param-name>driver</param-name>-->
+    <!--            <param-value>org.postgresql.Driver</param-value>-->
+    <!--        </init-param>-->
+    <!--        <init-param>-->
+    <!--            <param-name>url</param-name>-->
+    <!--            <param-value>jdbc:postgresql://arjuna.db.elephantsql.com:5432/</param-value>-->
+    <!--        </init-param>-->
+    <!--        <init-param>-->
+    <!--            <param-name>username</param-name>-->
+    <!--            <param-value>fsmfppcj</param-value>-->
+    <!--        </init-param>-->
+    <!--        <init-param>-->
+    <!--            <param-name>password</param-name>-->
+    <!--            <param-value>opXwqwWLpezpFQHX6OWFl3mQW1xf0VqH</param-value>-->
+    <!--        </init-param>-->
+    <!--    </servlet>-->
 
     <context-param>
         <param-name>driver</param-name>
@@ -43,10 +43,26 @@
         <param-value>opXwqwWLpezpFQHX6OWFl3mQW1xf0VqH</param-value>
     </context-param>
 
-<!--    <servlet-mapping>-->
-<!--        <servlet-name>MemberUpdateServlet</servlet-name>-->
-<!--        <url-pattern>/member/update</url-pattern>-->
-<!--    </servlet-mapping>-->
+<!--    &lt;!&ndash; 필터 선언 &ndash;&gt;-->
+<!--    <filter>-->
+<!--        <filter-name>CharacterEncodingFilter</filter-name>-->
+<!--        <filter-class>spms.filters.CharacterEncodingFilter</filter-class>-->
+<!--        <init-param>-->
+<!--            <param-name>encoding</param-name>-->
+<!--            <param-value>UTF-8</param-value>-->
+<!--        </init-param>-->
+<!--    </filter>-->
+
+<!--    &lt;!&ndash; 필터 URL 매핑 &ndash;&gt;-->
+<!--    <filter-mapping>-->
+<!--        <filter-name>CharacterEncodingFilter</filter-name>-->
+<!--        <url-pattern>/*</url-pattern>-->
+<!--    </filter-mapping>-->
+
+    <!--    <servlet-mapping>-->
+    <!--        <servlet-name>MemberUpdateServlet</servlet-name>-->
+    <!--        <url-pattern>/member/update</url-pattern>-->
+    <!--    </servlet-mapping>-->
 
     <display-name>Apache-Axis</display-name>
     <servlet>

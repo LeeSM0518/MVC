@@ -1,7 +1,16 @@
 package spms.filters;
 
 import javax.servlet.*;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.annotation.WebInitParam;
 import java.io.IOException;
+
+@WebFilter(
+    urlPatterns = "/*",
+    initParams = {
+        @WebInitParam(name = "encoding", value = "UTF-8")
+    }
+)
 
 public class CharacterEncodingFilter implements Filter {
 
@@ -19,6 +28,7 @@ public class CharacterEncodingFilter implements Filter {
   }
 
   @Override
-  public void destroy() {}
+  public void destroy() {
+  }
 
 }

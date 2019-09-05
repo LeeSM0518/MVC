@@ -37,7 +37,7 @@ public class MemberAddServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    req.setCharacterEncoding("UTF-8");
+//    req.setCharacterEncoding("UTF-8");
     String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
         " (?, ?, ?, NOW(), NOW())";
 

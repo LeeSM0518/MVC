@@ -79,7 +79,7 @@ public class MemberUpdateServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    req.setCharacterEncoding("UTF-8");
+//    req.setCharacterEncoding("UTF-8");
     String query = "update members set email=?, mname=?, mod_date=now() where MNO=?";
 
     try {

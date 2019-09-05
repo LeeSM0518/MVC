@@ -1433,3 +1433,98 @@ Filter 인터페이스에 선언된 세 개의 메서드는 필터의 생명주�
 
 - **필터의 실행**
 
+<img src="../capture/스크린샷 2019-09-05 오전 10.40.47.png">
+
+<br>
+
+### 필터의 적용 사례
+
+서블릿까지 **요청이 전달되기 전에** 처리되어야 할 작업이 있다면, nextFilter.doFilter() 호출 전에 그 작업을 수행하면 된다. 또한, 서블릿이 처리한 결과를 **클라이언트로 보내기 전에** 처리해야 할 작업이 있다면 nextFilter.doFilter() 호출 후에 그 작업을 수행하면 된다.
+
+* **필터의 실행 전 작업과 실행 후 작업**
+
+<img src="../capture/스크린샷 2019-09-05 오후 1.36.22.png">
+
+<br>
+
+## 4.9.4. 필터의 배치
+
+필터의 배치 방법은 DD 파일에 기술하는 방법과 어노테이션으로 기술하는 방법이 있다.
+
+<br>
+
+### DD 파일에 필터 배치 정보 설정
+
+* **/web/WEB-INF/web.xml**
+
+  ```xml
+  ...
+  <!-- 필터 선언 -->
+  <filter>
+    <filter-name>CharacterEncodingFilter</filter-name>
+    <filter-class>spms.filters.CharacterEncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+  </filter>
+  
+  <!-- 필터 URL 매핑 -->
+  <filter-mapping>
+    <filter-name>CharacterEncodingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  ...
+  ```
+
+  * **\<filter>** : 필터를 선언하는 태그
+  * **\<filter-name>** : 필터의 별명을 설정
+  * **\<filter-class>** : 필터의 클래스 이름을 설정
+  * **\<init-param>** : 서블릿 초기화 매개변수. 필터가 사용할 정적인 데이터를 정의할 때 사용한다
+  * **\<filter-mapping>** : 필터를 어떤 요청에 대해 적용할 것인지 설정
+  * **\<filter-name>** : \<filter> 엘리먼트에서 정의한 이름
+  * **\<url-pattern>** : 필터가 적용되어야 하는 URL. '/*' 으로 설정하면 모든 요청에 대해 이 필터를 적용한다.
+
+<br>
+
+### 서블릿에서 setCharacterEncoding() 호출문을 제거
+
+* **src/spms/servlets/*.java** 에서 setCharacterEncoding() 호출 부분 제거
+
+<br>
+
+### 어노테이션을 이용한 필터 배치
+
+**@WebFilter 어노테이션을** 사용하면 필터의 소스 파일에 직접 배치 정보를 설정할 수 있다.
+
+1. DD(Deployment Descriptor) 파일(web.xml)에 작성했던 필터 관련 정보를 모두 제거한다.
+
+2. CharacterEncodingFilter 클래스에 **@WebFilter 어노테이션** 작성한다.
+
+   * **src/spms/filters/CharacterEncodingFilter.java**
+
+     ```java
+     ...
+     @WebFilter(
+       urlPatterns = "/*",
+       initParams = {
+         @WebInitParam(name = "encoding", value = "UTF-8")
+       }
+     )
+     
+     public class CharacterEncodingFilter implements Filter {
+     ...
+     ```
+
+<br>
+
+# 4.10. 정리
+
+* HTTP 프로토콜의 요청 형식 중에서 **GET과 POST** 요청
+  * 데이터 조회나 삭제 요청처럼 **간단한 데이터를 보내는 경우에는 GET 방식이** 적합하다.
+  * 데이터 등록이나 변경, 로그인과 같은 **대량의 데이터를 보내거나** 브라우저의 주소창에 **노출되지 말아야 할 데이터를 보내는 경우에는 POST 방식이** 적합하다.
+* **HttpServlet을** 상속받아서 서블릿을 만들면 **GET 요청 처리는 doGet(), POST 요청 처리는 doPost()** 를 재정의하면 된다.
+* **리프래시는** 응답 헤더에 Refresh를 설정하거나, HTML의 meta 태그로 설정할 수 있다. **요청 결과를 출력할 때 사용.**
+* **리다이렉트는** ServletResponse 의 sendRedirect() 를 호출하면 된다. **요청 결과를 출력하지 않을 때 사용.**
+* 특정 서블릿에서 사용할 정보라면 **서블릿 초기화 매개변수를** 사용하고, 여러 서블릿에서 공통으로 사용할 정보라면 **컨텍스트 초기화 매개변수를** 사용한다.
+* 서블릿을 실행하기 전이나 후에 특별한 작업을 수행해야 한다면 **필터를** 사용한다.
