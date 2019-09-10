@@ -202,4 +202,874 @@ JSP 엔진은 JSP 파일로부터 서블릿 클래스를 생성할 때 HttpJspPa
 
 * **HttpJspPage 인터페이스의 상속 관계**
 
+  <img src="../capture/스크린샷 2019-09-10 오전 8.34.35.png" width=500>
+
+  * **HttpJspPage를** 구현한다는 것은 결국 **Servlet 인터페이스도** 구현한다는 것이기 때문에 해당 클래스는 서블릿이 될 수밖에 없다.
+
+<br>
+
+### jspInit()
+
+JspPage에 선언된 **jspInit()는 JSP 객체(JSP로부터 만들어진 서블릿 객체)가 생성될 때 호출된다.** 만약 JSP 페이지에서 init()를 오버라이딩할 일이 있다면 init() 대신 jspInit()를 오버라이딩 하세요.
+
+<br>
+
+### jspDestroy()
+
+이 메소드는 **JSP 객체(JSP로부터 만들어진 서블릿 객체)가 언로드(Unload) 될 때 호출된다.** 만약 JSP 페이지에서 destroy() 오버라이딩 할 일이 있다면 destroy() 대신 jspDestroy()를 오버라이딩 해야 한다.
+
+<br>
+
+### _jspService()
+
+HttpJspPage 에 선언된 **_jspService() 는 JSP 페이지가 해야 할 작업이 들어 있는 메서드이다.** 서블릿 컨테이너가 service() 를 호출하면 service() 메서드 내부에서는 바로 이 메서드를 호출함으로써 JSP 페이지에 작성했던 코드들이 실행되는 것이다.
+
+<br>
+
+## 5.2.5. JSP 객체의 실체 분석
+
+### HttpJspBase 클래스
+
+HttpJspBase는 톰캣 서버에서 제공하는 클래스이다. 이 클래스를 분석해 보면 결국 HttpServlet 클래스를 상속받았고 HttpJspPage 인터페이스를 구현하였다. 즉 **HttpJspBase를 상속받은 JSP 객체는 서블릿이다.**
+
+<br>
+
+### JSP 내장 객체
+
+**_jspService()의** 매개변수는 HttpServletRequest 와 HttpServletResponse 객체이다. doGet() 과 doPost() 의 매개변수와 같다. 다만, **매개변수의 이름은 반드시 request, response로 해야 한다.**
+
+```java
+public void _jspService(
+	final javax.servlet.http.HttpServletRequest request,
+  final javax.servlet.http.HttpServletResponse response)
+```
+
+<br>
+
+그리고 _jspServlet()에 선언된 로컬 변수 중에서 다음의 참조 변수들은 반드시 이 이름으로 존재해야 한다. 물론 이 변수들에는 해당 객체의 주소가 할당된다.
+
+```java
+final javax.servlet.jsp.PageContext pageContext;
+javax.servlet.http.HttpSession session = null;
+final javax.servlet.ServletContext application;
+final javax.servlet.ServletConfig config;
+javax.servlet.jsp.JspWriter out = null;
+final java.lang.Object page = this;
+```
+
+이렇게 _jspService()에 선언된 request, response, pageContext, session, application, config, out, page, exception 객체들은 이 메서드가 호출될 때 반드시 준비되는 객체들이기 때문에, 이 객체들을 가리켜 **'JSP 내장 객체(Implicit Objects)'** 라 부른다. 이 객체들은 별도의 선언 없이 JSP 페이지에서 마음껏 사용할 수 있다.
+
+<br>
+
+### JSP 출력문
+
+HTML을 출력하고 싶으면 JSP에서는 그냥 출력할 내용을 작성하면 된다. 
+
+<br>
+
+## 5.2.6. HttpJspBase 클래스의 소스
+
+톰캣 서버의 JSP 엔진은 서블릿 소스를 생성할 때 슈퍼 클래스로서 HttpJspBase를 사용한다. 당연히 이 클래스는 톰캣 서버에 포함된 클래스이다.
+
+* **HttpServlet.java 클래스의 일부분**
+
+  ```java
+  public abstract class HttpJspBase extends HttpServlet implements HttpJspPage {
+    ...
+    @Override
+    public final void init(ServletConfig config) throws ServletException {
+      super.init(config);
+      jspInit();
+      _jspInit();
+    }
+    
+    @Override
+    public final void destroy() {
+      jspDestroy();
+      _jspDestroy();
+    }
+    
+    @Override
+    public final void service(
+      HttpServletRequest request, HttpServletResponse response) throws ServletException,
+    IOException {
+      _jspService(request, response);
+    }
+    
+    @Override
+    public void jspInit() {}
+    
+    @Override
+    public void jspDestroy() {}
+    
+    @Override
+    public abstract void _jspService(
+    	HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
+    )
+  }
+  ```
+
+  * HttpJspBase는 HttpServlet을 상속받기 때문에 이 클래스의 자식 클래스는 당연히 서블릿 클래스가 되는 것이다.
+  * init()가 호출되면 init()에서는 jspInit()를 호출
+  * destroy()에서는 jspDestroy()를 호출
+  * service()도 마찬가지로 _jspService()를 호출
+
+<br>
+
+## 5.2.7. JSP 프리컴파일
+
+ **미리 자바 서블릿을 만들게 되면,** JSP를 실행할 때마다 JSP 파일이 변경되었는지, JSP 파일에 대해 서블릿 파일이 있는지 **매번 검사할 필요가 없다.** 또한 JSP 파일에 대해 자바 서블릿 소스를 생성하고 **컴파일하는 과정이 없어서 실행 속도를 높일 수 있다.**
+
+이 방식의 문제는 JSP를 편집하면 서버를 다시 시작해야 한다. 그래야만 변경된 JSP에 대해 서블릿 코드가 다시 생성된다. **어느정도 안정화된 이후에 JSP 프리컴파일(Precompile)을 고려해라.**
+
+<br>
+
+# 5.3. JSP의 주요 구성 요소
+
+**JSP를 구성하는 요소**
+
+* **템플릿 데이터**
+  * 클라이언트로 출력되는 콘텐츠(ex: HTML, 자바스크립트, 스타일 시트, JSON 형식 문자열, XML, 일반 텍스트 등)
+* **JSP 전용 태그**
+  * 특정 자바 명령문으로 바뀌는 태그
+
+<br>
+
+## 5.3.1. JSP로 만드는 계산기 실습
+
+* **web/calc/Calculator.jsp**
+
+  ```jsp
+  <%--
+    Created by IntelliJ IDEA.
+    User: sangminlee
+    Date: 10/09/2019
+    Time: 12:12 오전
+    To change this template use File | Settings | File Templates.
+  --%>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <%
+      String v1 = "";
+      String v2 = "";
+      String result = "";
+      String[] selected = {"", "", "", ""};
   
+      if (request.getParameter("v1") != null) {
+          v1 = request.getParameter("v1");
+          v2 = request.getParameter("v2");
+          String op = request.getParameter("op");
+  
+          result = calculate(
+                  Integer.parseInt(v1),
+                  Integer.parseInt(v2),
+                  op);
+  
+          if ("+".equals(op)) {
+              selected[0] = "selected";
+          } else if ("-".equals(op)) {
+              selected[1] = "selected";
+          } else if ("*".equals(op)) {
+              selected[2] = "selected";
+          } else if ("/".equals(op)) {
+              selected[3] = "selected";
+          }
+      }
+  %>
+  <html>
+  <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>계산기</title>
+  </head>
+  <body>
+  <h2>JSP 계산기</h2>
+  <form action="Calculator.jsp" method="get">
+      <input type="text" name="v1" size="4" value="<%=v1%>">
+      <select name="op">
+          <option value="+" <%=selected[0]%>>+</option>
+          <option value="-" <%=selected[1]%>>-</option>
+          <option value="*" <%=selected[2]%>>*</option>
+          <option value="/" <%=selected[3]%>>/</option>
+      </select>
+      <input type="text" name="v2" size="4" value="<%=v2%>">
+      <input type="submit" value="=">
+      <input type="text" size="8" value="<%=result%>"><br>
+  </form>
+  </body>
+  </html>
+  <%!
+  
+      private String calculate(int a, int b, String op) {
+          int r = 0;
+  
+          if ("+".equals(op)) {
+              r = a + b;
+          } else if ("-".equals(op)) {
+              r = a - b;
+          } else if ("*".equals(op)) {
+              r = a * b;
+          } else if ("/".equals(op)) {
+              r = a / b;
+          }
+  
+          return Integer.toString(r);
+      }
+  %>
+  ```
+
+* **웹 브라우저에서 localhost:8080/calc/Calculator.jsp 를 주소창에 입력한다.**
+
+<img src="../capture/스크린샷 2019-09-10 오후 9.14.17.png" width=500>
+
+* **계산기 화면에서 값을 입력하고 <=> 버튼을 누르면, 계산기 입력 화면이 출력되면서 계산 결과가 출력된다.**
+
+  <img src="../capture/스크린샷 2019-09-10 오후 9.16.06.png" width=500>
+
+  * \<form> 태그의 action 속성값을 Calculator.jsp 로 설정했기 때문에 계산 결과도 이 JSP가 처리한다. 즉 값을 계산하기 위해 '=' 버튼을 누르면 다시 Calculator.jsp 를 요청하도록 했다.
+
+    ```jsp
+    <form action="Calculator.jsp" method="get">
+    ```
+
+<br>
+
+## 5.3.2. 템플릿 데이터
+
+**템플릿 데이터는 클라이언트로 출력되는 콘텐츠이다.** 즉 HTML이나 XML, 자바스크립트, 스타일 시트, JSON 문자열, 일반 텍스트 등을 말한다.
+
+템플릿 데이터는 서블릿 코드를 생성할 때 출력문으로 바뀐다. 클라이언트로 출력할 내용은 일반 문서 작성하듯이 적어 넣는다. 이렇게 작성한 텍스트를 템플릿 데이터라 부른다.
+
+- **web/calc/Calculator.jsp**
+
+  ```jsp
+  <html>
+  <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>계산기</title>
+  </head>
+  <body>
+  <h2>JSP 계산기</h2>
+  <form action="Calculator.jsp" method="get">
+    ...
+  </form>
+  </body>
+  </html>
+  ```
+
+<br>
+
+### 5.3.3. JSP 전용 태그 - 지시자
+
+**\<%@ 지시자 ... %>** 는 JSP 전용 태그로 '지시자(Directives)' 나 '속성'에 따라 특별한 자바 코드를 생성한다. JSP 지시자에는 **page, taglib, include** 가 있다.
+
+- **지시자 선언**
+
+  ```jsp
+  <%@ 지시자 속성="값" 속성="값" ... %>
+  ```
+
+<br>
+
+### page 지시자
+
+page 지시자는 **JSP 페이지와 관련된 속성을 정의할 때 사용하는 태그이다.** 
+
+- **Calculator.jsp 의 page 지시자**
+
+  ```jsp
+  <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+  ```
+
+  - **language 속성** : 스크립트릿(Scriptlet)이나 표현식(Expression element), 선언부(Declaration element)를 작성할 때 사용할 프로그래밍 언어를 지정한다. language 속성을 생략하면 기본으로 'java' 입니다.
+  - **contentType 속성** : 출력할 데이터의 MIME 타입과 문자 집합을 지정한다. 예제 코드에서 값 'text/html'은 출력할 데이터가 HTML 텍스트임을 가리킨다. 'charset=UTF-8'은 출력할 데이터를 UTF-8로 변환(encoding)할 것을 지시한다.
+  - **pageEncoding 속성** : 출력할 데이터의 문자 집합을 지정한다. 기본값은 'ISO-8859-1' 이다.
+
+<br>
+
+## 5.3.4. JSP 전용 태그 - 스크립트릿
+
+JSP 페이지 안에 자바 코드를 넣을 때는 스크립트릿(Scriptlet Elements) 태그\<% %> 안에 작성한다.
+
+- **스크립트릿**
+
+  ```jsp
+  <% 자바 코드 %>
+  ```
+
+- **web/calc/Calculator.jsp 의 스크립트릿**
+
+  ```jsp
+  <%
+  String v1 = "";
+  String v2 = "";
+  String result = "";
+  String[] selected = {"", "", "", ""};
+  
+  // 값이 있을 때만 꺼낸다.
+  if (request.getParameter("v1") != null) {
+    v1 = request.getParameter("v1");
+    v2 = request.getParameter("v2");
+    String op = request.getParameter("op");
+    
+    result = calculate(Integer.parseInt(v1), Integer.parseInt(v2), op);
+  }
+  %>
+  ```
+
+  - **\<% %> 안에는 클라이언트가 보낸 매개변수 값을 임시 변수에 저장하고 그 계산 결과도 임시 변수에 저장하는** 자바 코드가 들어 있다.
+
+<br>
+
+## 5.3.5. JSP 내장 객체
+
+JSP 페이지에서 스크립트릿 \<% %> 이나 표현식 \<%=%> 을 작성할 때 별도의 선언 없이 사용하는 자바 객체가 있다. 이런 객체를 **JSP 내장 객체(Implicit Objects)라 한다.**
+
+- **request 객체**
+
+  ```java
+  v1 = reqeust.getParameter("v1");
+  v2 = request.getParameter("v2");
+  String op = request.getParameter("op");
+  ```
+
+<br>
+
+## 5.3.6. JSP 전용 태그 - 선언문
+
+**JSP 선언문(Declarations) \<%! %>** 은 서블릿 클래스의 멤버(변수나 메서드)를 선언할 때 사용하는 태그이다. 선언문을 작성하는 위치는 위, 아래, 가운데 어디든 상관없다.
+
+- **선언문**
+
+  ```jsp
+  <%! 멤버 변수 및 메서드 선언 %>
+  ```
+
+- **web/calc/Calculator.jsp 의 JSP 선언문**
+
+  ```jsp
+  <%!
+  private String calculate(int a, int b, String op) {
+    int r = 0;
+    
+    if ("+".equals(op)) {
+      r = a + b;
+    }
+    ...
+    return Integer.toString(r);
+  }
+  %>
+  ```
+
+  - 계산을 수행하는 calculate() 메서드를 선언문 태그 \<%! %> 에 작성하였다. **calculate()는 클라이언트가 보낸 매개변수 값을 계산하여 그 결과를 문자열로 바꾸어 반환한다.**
+
+<br>
+
+## 5.3.7. JSP 전용 태그 - 표현식
+
+**표현식(Expressions) 태그는 문자열을 출력할 때 사용한다.** 따라서 표현식 **\<%= %>** 안에는 결과를 반환하는 자바 코드가 와야 한다.
+
+- **표현식 태그**
+
+  ```jsp
+  <%= 결과를 반환하는 자바 표현식 %>
+  ```
+
+- **web/calc/Calculator.jsp 의 JSP 표현식**
+
+  ```jsp
+  <input type="text" name="v1" size="4" value="<%=v1%>">
+  <select name="op">
+    <option value="+" <%=selected[0]%>>+</option>
+    <option value="-" <%=selected[1]%>>-</option>
+    <option value="*" <%=selected[2]%>>*</option>
+    <option value="/" <%=selected[3]%>>/</option>
+  </select>
+  <input type="text" name="v2" size="4" value="<%=v2%>">
+  <input type="submit" value="=">
+  <input type="text" size="8" value="<%=result%>"><br>
+  ```
+
+  - \<input> 태그에 value 속성을 추가하였다. value 속성의 값은 표현식\<%= %> 태그를 사용하여 출력한다.
+  - 계산 요청이 들어오면 op 연산자 값이 무엇이냐에 따라 selected[] 배열에서 그 연산자에 해당하는 항목을 찾아 'selected' 문자열을 넣는다.
+
+<br>
+
+서블릿 소스를 보면 JSP 표현식 안에 있던 자바 코드가 out.println() 출력의 인자값(argument)으로 복사된다. 즉 **JSP 엔진은 표현식 태그에 작성한 자바 코드를 출력문의 인자값으로 복사한다.**
+
+<br>
+
+# 5.4. 서블릿에서 뷰 분리하기
+
+- **뷰 컴포넌트 도입**
+
+  <img src="../capture/스크린샷 2019-09-10 오후 10.20.05.png">
+
+  - 클라이언트로부터 요청이 들어오면 서블릿은 **데이터 준비(모델 역할)하여 JSP에 전달(컨트롤러 역할)한다.** JSP는 서블릿이 준비한 데이터를 가지고 웹 브라우저로 출력할 화면을 만든다.
+
+<br>
+
+## 5.4.1. 값 객체(VO) = 데이터 수송 객체(DTO)
+
+**'값 객체(value object)' 란** 데이터베이스에서 가져온 JSP 페이지에 전달하기 위한 정보를 담는 객체이다. 값 객체는 계층 간 또는 객체 간에 데이터 전달하는데 이용하므로 **'데이터 수송 객체(data transfer object)'** 라고도 부른다. 또한 값 객체는 업무영역(business domain)의 데이터를 표현하기 때문에 객체지향 분석 및 설계 분야에서는 **'도메인 객체(domain obejct)'** 라고도 한다.
+
+- **값 객체**
+
+  <img src="../capture/스크린샷 2019-09-10 오후 10.25.36.png">
+
+<br>
+
+## 5.4.2. 뷰 분리하기 실습
+
+- **Model-View-Controller 올인원 방식 (이전의 회원 목록 서블릿)**
+
+  <img src="../capture/스크린샷 2019-09-10 오후 10.27.48.png">
+
+<br>
+
+- **회원 목록 서블릿으로 부터 출력 부분을 분리하여 JSP 페이지를 만듬**
+
+  <img src="../capture/스크린샷 2019-09-10 오후 10.31.08.png">
+
+  - 출력은 JSP에서 맡게 될 것이며 서블릿에서 준비한 데이터를 JSP 전달할 것이다.
+
+<br>
+
+## 5.4.3. 값 객체 생성
+
+값 객체 역할을 수행할 Member 클래스를 생성
+
+- **src/spms/vo/Member.java**
+
+  ```java
+  package spms.vo;
+  
+  import java.util.Date;
+  
+  public class Member {
+  
+    protected int no;
+    protected String name;
+    protected String email;
+    protected String password;
+    protected Date createDate;
+    protected Date modifiedDate;
+  
+    public int getNo() {
+      return no;
+    }
+  
+    public Member setNo(int no) {
+      this.no = no;
+      return this;
+    }
+  
+    public String getName() {
+      return name;
+    }
+  
+    public Member setName(String name) {
+      this.name = name;
+      return this;
+    }
+  
+    public String getEmail() {
+      return email;
+    }
+  
+    public Member setEmail(String email) {
+      this.email = email;
+      return this;
+    }
+  
+    public String getPassword() {
+      return password;
+    }
+  
+    public Member setPassword(String password) {
+      this.password = password;
+      return this;
+    }
+  
+    public Date getCreateDate() {
+      return createDate;
+    }
+  
+    public Member setCreateDate(Date createDate) {
+      this.createDate = createDate;
+      return this;
+    }
+  
+    public Date getModifiedDate() {
+      return modifiedDate;
+    }
+  
+    public Member setModifiedDate(Date modifiedDate) {
+      this.modifiedDate = modifiedDate;
+      return this;
+    }
+  }
+  ```
+
+  - 보통 데이터베이스 테이블에 대응하여 값 객체를 정의한다.
+
+  -  **주의할 점은 셋터(Setter) 메서드의 리턴값이 void가 아니라 Member 이다.** 그 이유는 셋터 메서드를 연속으로 호출하여 값을 할당하게 하기 위함이다.
+
+    ```java
+    new Member().setNo(1).setName("홍길동").setEmail("hong@test.com");
+    ```
+
+<br>
+
+## 5.4.4. 서블릿에서 뷰 관련 코드 제거
+
+MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코드를 제거한다.
+
+- **src/spms/servlets/MemberListServlet.java**
+
+  ```java
+  package spms.servlets;
+  
+  import spms.vo.Member;
+  
+  import javax.servlet.*;
+  import javax.servlet.annotation.WebServlet;
+  import javax.servlet.http.HttpServlet;
+  import javax.servlet.http.HttpServletRequest;
+  import javax.servlet.http.HttpServletResponse;
+  import java.io.IOException;
+  import java.io.PrintWriter;
+  import java.sql.*;
+  import java.util.ArrayList;
+  
+  // 서블릿을 만들고자 서블릿 어노테이션을 쓰고
+  // GenericServlet 을 상속받는다.
+  @WebServlet("/member/list")
+  public class MemberListServlet extends HttpServlet {
+  
+    private ServletContext sc;
+  
+    static {
+      try {
+        Class.forName("org.postgresql.Driver");
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  
+    @Override
+    public void init() throws ServletException {
+      super.init();
+      sc = this.getServletContext();
+    }
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      String query = "select mno, mname, email, cre_date" +
+          " from members" +
+          " order by mno";
+      
+      // 데이터 베이스 연결 및 쿼리 실행
+      try (Connection connection = DriverManager.getConnection(
+          sc.getInitParameter("url"),
+          sc.getInitParameter("username"),
+          sc.getInitParameter("password"));
+           PreparedStatement statement = connection.prepareStatement(query);
+           ResultSet resultSet = statement.executeQuery()) {
+        resp.setContentType("text/html; charset=UTF-8");
+        ArrayList<Member> members = new ArrayList<>();
+  
+        // 데이터베이스에서 회원 정보를 가져와 Member 에 담는다.
+        // 그리고 Member 객체를 ArrayList 에 추가한다.
+        while (resultSet.next()) {
+          members.add(new Member()
+          .setNo(resultSet.getInt("mno"))
+          .setName(resultSet.getString("mname"))
+          .setEmail(resultSet.getString("email"))
+          .setCreateDate(resultSet.getDate("cre_date")));
+        }
+  
+        // request 에 회원 목록 데이터 보관한다.
+        req.setAttribute("members", members);
+  
+        // JSP 로 출력을 위임한다.
+        RequestDispatcher rd = req.getRequestDispatcher(
+            "/member/MemberList.jsp");
+        rd.include(req, resp);
+  
+      } catch (Exception e) {
+        throw new ServletException(e);
+      }
+    }
+  }
+  ```
+
+  - HTML 출력 코드 제거 (ex: out.println())
+
+  - JSP에 전달할 회원 목록 데이터를 준비한다.
+
+    ```java
+    ArrayList<Member> members = new ArrayList<Member>();
+    while(rs.next()) {
+      members.add(new Member()
+                 .setNo(rs.getInt("mno"))
+                 .setName(rs.getString("mname"))
+                 .setEmail(rs.getString("email"))
+                 .setCreatedDate(rs.getDate("cre_date")));
+    }
+    ```
+
+  - RequestDispatcher를 이용한 forward, include 사용, 회원 목록 데이터가 준비되었으면, 화면 생성을 위해 JSP로 작업을 위임해야 한다.
+
+    ```java
+    ReqeustDispatcher rd = request.getRequestDispatcher(
+                                      "/member/MemberList.jsp");
+    rd.include(req, resp);
+    ```
+
+    > RequestDispatcher를 얻을 때, 반드시 어떤 서블릿(또는 JSP)으로 위임할 것인지 알려 줘야 한다.
+
+  - ServletRequest(HttpServletRequest)를 통한 데이터를 전달한다. setAttribute()를 호출하여 값을 보관할 수 있고, getAttribute()를 호출하여 보관된 값을 꺼낼 수 있다.
+
+    ```java
+    request.setAttribute("members", members);
+    ```
+
+    > MemberListServlet의 request 객체는 MemberList.jsp 와 공유하기 때문에, request에 값을 담아 두면 MemberList.jsp 에서 써내 쓸 수 있다.
+
+<br>
+
+## 5.4.5. 뷰 컴포넌트 만들기
+
+MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면을 생성하는 JSP를 만들어 보자.
+
+- **web/member/MemberList.jsp**
+
+  ```jsp
+  <%--
+    Created by IntelliJ IDEA.
+    User: sangminlee
+    Date: 10/09/2019
+      Time: 11:02 오후
+    To change this template use File | Settings | File Templates.
+        --%>
+  <%@ page import="spms.vo.Member" %>
+  <%@ page import="java.util.ArrayList" %>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>회원 목록</title>
+    </head>
+    <body>
+      <h1>회원 목록</h1>
+      <p><a href="add">신규 회원</a></p>
+      <%
+      ArrayList<Member> members = (ArrayList<Member>) request.getAttribute("members");
+      for (Member member : members) {
+        %>
+      <%=member.getNo()%>,
+      <a href="update?no=<%=member.getNo()%>"><%=member.getName()%>
+      </a>,
+      <%=member.getEmail()%>,
+      <%=member.getCreateDate()%>
+      <a href="delete?no=<%=member.getNo()%>">[삭제]</a><br>
+      <%} %>
+    </body>
+  </html>
+  ```
+
+  - Member 클래스와 ArrayList 클래스를 사용해야 하므로 **import를 처리하는 page 지시자 추가**
+
+    ```jsp
+    <%@ page import="spmps.vo.Member"%>
+    <%@ page import="java.util.ArrayList"%>
+    ```
+
+  - MemberListServlet이 넘겨준 회원 목록 데이터를 꺼내고자 스크립트릿 태그를 사용하여 getAttribute()를 호출하였다.
+
+    ```jsp
+    <%
+    ArrayList<Member> members = (ArrayList<Memeber>)request.getAttribute("members");
+    for(Member member : members) {
+    %>
+    ```
+
+    > request로부터 회원 목록을 꺼내고 나서 반복문을 사용하여 회원 정보를 출력한다.
+
+  - 번호와 이름, 이메일, 등록일을 출력하기 위해 **JSP 표현식 \<%= %>을 사용한다.**
+
+    ```jsp
+    <%=member.getNo()%>,
+    <a href="update?no=<%=member.getNo()%>"><%=member.getName()%></a>,
+    <%=member.getEmail()%>,
+    <%=member.getCreatedDate()%>
+    <a href="delete?no=<%=member.getNo()%>">[삭제]</a><br>
+    ```
+
+  <br>
+
+## 5.4.6. 회원 목록 테스트
+
+- http://localhost:8080/member/list 웹 브라우저로 테스트
+
+  <img src="../capture/스크린샷 2019-09-10 오후 11.15.38.png" width=500>
+
+  - 이처럼 서블릿에서 출력 작업을 분리하여 JSP에 위임하는 구조로 만들면 출력문을 작성하기도 쉽고, 소스 코드를 유지 보수하기도 편리하다.
+
+<br>
+
+# 5.5. 포워딩과 인클루딩
+
+서블릿끼리 작업을 위임하는 방법은 **포워딩(Forwarding)과 인클루딩(Including)** 이렇게 두 가지 방법이 있다.
+
+- **포워드 위임 방식**
+
+  <img src="../../../../capture/스크린샷 2019-09-10 오후 11.31.07.png">
+
+  1. 웹 브라우저가 '서블릿 A' 를 요청하면, 서블릿 A는 작업을 수행한다.
+  2. 서블릿 A에서 '서블릿 B'로 실행을 위임한다.
+  3. 서블릿 B는 작업을 수행하고 나서 응답을 완료한다.
+
+  > 포워드 방식은 작업을 한 번 위임하면 **다시 이전 서블릿으로 제어권이 돌아오지 않는다.**
+
+<br>
+
+- **인클루드 위임 방식**
+
+  <img src="../../../../capture/스크린샷 2019-09-10 오후 11.33.50.png">
+
+  1. 웹 브라우저가 '서블릿 A' 를 요청하면, 서블릿 A는 작업을 수행한다.
+  2. 서블릿 A 에서 '서블릿 B' 로 실행을 위임한다.
+  3. 서블릿 B 는 작업을 수행하고 나서 다시 서블릿 A로 제어권을 넘긴다.
+  4. 서블릿 A는 나머지 작업을 수행한 후 응답을 완료한다.
+
+  > 인클루드 방식은 다른 서블릿으로 작업을 위임한 후, 그 서블릿의 실행이 끝나면 **다시 이전 서블릿으로 제어권이 넘어온다.**
+
+<br>
+
+## 5.5.1. 포워딩과 인클루딩 실습
+
+서블릿을 실행하다가 오류가 발생하면, 이 부분을 포워딩으로 오류 정보를 출력하는 페이지로 위임해보자.
+
+- **포워딩 실습 시나리오**
+
+  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.13.31.png">
+
+<br>
+
+- **인클루딩 실습 시나리오**
+
+  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.17.57.png">
+
+  1. MemebrListServlet 요청
+  2. MemberListServlet 는 데이터베이스에서 회원 정보를 가져온다. 그리고 출력을 위해 MemberList.jsp로 실행 위임(인클루딩 방식)
+  3. Header.jsp 는 화면 상단 내용에 출력, 다시 MemberList.jps 로 제어권 넘김
+  4. MemberList.jsp 는 화면의 하단 내용 출력을 위해 Tail.jsp 로 실행을 위임(인클루딩 방식)
+  5. Tail.jsp 는 하단 내용을 출력하고, 다시 MemberList.jsp 로 제어권을 넘김
+  6. MemberList.jsp 는 마무리 출력을 수행한 다음, 제어권을 MemberListServlet 으로 넘김
+  7. MemberListServlet은 응답을 완료
+
+<br>
+
+## 5.5.2. 포워딩
+
+MemberListServlet 소스를 보면, 데이터베이스와 연동하여 작업하다가 문제가 발생하면, **ServletException 객체를 던지게 되어 있다.**
+
+```java
+} catch (Exception e) {
+  throw new ServletException(e);
+}
+```
+
+톰캣 서버가 서블릿을 호출하는 것이기 때문에, **서블릿이 던진 ServletException 객체는 톰캣 서버가 받는다.**
+
+<br>
+
+### 예외 발생 테스트
+
+MySQL 데이터베이스 연결을 실패해본다.
+
+- **예외가 발생한 경우의 화면**
+
+  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.24.23.png">
+
+  - 에러 발생시 서블릿을 호출한 톰캣 서버는 서블릿이 던진 예외 객체를 받게 되고, 앞의 그림과 같은 결과 화면을 웹 브라우저에게 보낸다.
+
+<br>
+
+### 포워딩을 이용한 예외 처리
+
+예외가 발생하면 앞의 화면 내용보다는 좀 더 부드러운 안내 문구를 출력하는 JSP로 위임해보자.
+
+- **web/Error.jsp**
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>시스템 오류!</title>
+    </head>
+    <body>
+      <p>요청을 처리하는 중에 문제가 발생하였습니다. 잠시 후에 다시 요청하시기 바랍니다.
+        만약 계속해서 이 문제가 발생한다면 시스템 운영팀(사내번호: 8282)에 연락하기 바랍니다.</p>
+    </body>
+  </html>
+  ```
+
+- **src/spms/servlets/MemberListServlet.java**
+
+  ```java
+  ...
+  } catch (Exception e) {
+    //      throw new ServletException(e);
+    req.setAttribute("error", e);
+    RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+    rd.forward(req, resp);
+  }
+  ...
+  ```
+
+  - 예외를 던지는 코드를 제거하고, **Error.jsp로 포워딩하는 코드를 추가한다.** 나중에 오류에 대한 상세 내용을 출력할 때 사용하기 위해 예외 객체를 request에 보관해 둔다.
+
+- **실행 결과**
+
+  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.28.24.png">
+
+<br>
+
+## 5.5.3. 인클루딩
+
+MemberList.jsp 에서 인클루딩을 이용하여 상단 내용을 출력하는 Header.jsp 와 하단 내용을 출력하는 Tail.jsp 를 포함해보자.
+
+<br>
+
+### Header.jsp 만들기
+
+- **web/Header.jsp**
+
+  ```jsp
+  <%@ page language="java" contentType="text/html; charset=UTF-8"%>
+  <div style="background-color: #00008b; color: #ffffff; height: 20px; 
+              padding: 5px;">
+    SPMS(Simple Project Management System)
+  </div>
+  ```
+
+  - **\<div> 태그**
+    - **style 속성** : 출력되는 내용의 모양을 정의
+
+<br>
+
+### Tail.jsp 만들기
+
+- **web/Tail.jsp**
+
+  ```jsp
+  <%$ page language="java" contentType="text/html; charset=UTF-8"%>
+  <div style="background-color: #f0fff0; height: 20px; padding: 5px; margin-top: 10px">
+    SPMS &copy; 2013
+  </div>
+  ```
+
+  
+

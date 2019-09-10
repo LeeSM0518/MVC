@@ -10,6 +10,7 @@
       <root url="jar://$PROJECT_DIR$/lib/log4j-1.2.8.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/axis.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/javax.servlet-api-4.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/postgresql-42.2.6.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
