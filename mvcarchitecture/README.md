@@ -911,7 +911,7 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
 
 - http://localhost:8080/member/list 웹 브라우저로 테스트
 
-  <img src="../capture/스크린샷 2019-09-10 오후 11.15.38.png" width=500>
+  <img src="../capture/스크린샷 2019-09-10 오후 11.15.38.png" width=300>
 
   - 이처럼 서블릿에서 출력 작업을 분리하여 JSP에 위임하는 구조로 만들면 출력문을 작성하기도 쉽고, 소스 코드를 유지 보수하기도 편리하다.
 
@@ -923,7 +923,7 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
 
 - **포워드 위임 방식**
 
-  <img src="../../../../capture/스크린샷 2019-09-10 오후 11.31.07.png">
+  <img src="../capture/스크린샷 2019-09-10 오후 11.31.07.png" width=500>
 
   1. 웹 브라우저가 '서블릿 A' 를 요청하면, 서블릿 A는 작업을 수행한다.
   2. 서블릿 A에서 '서블릿 B'로 실행을 위임한다.
@@ -935,7 +935,7 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
 
 - **인클루드 위임 방식**
 
-  <img src="../../../../capture/스크린샷 2019-09-10 오후 11.33.50.png">
+  <img src="../capture/스크린샷 2019-09-10 오후 11.33.50.png" width=500>
 
   1. 웹 브라우저가 '서블릿 A' 를 요청하면, 서블릿 A는 작업을 수행한다.
   2. 서블릿 A 에서 '서블릿 B' 로 실행을 위임한다.
@@ -952,13 +952,13 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
 
 - **포워딩 실습 시나리오**
 
-  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.13.31.png">
+  <img src="../capture/스크린샷 2019-09-11 오전 12.13.31.png">
 
 <br>
 
 - **인클루딩 실습 시나리오**
 
-  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.17.57.png">
+  <img src="../capture/스크린샷 2019-09-11 오전 12.17.57.png">
 
   1. MemebrListServlet 요청
   2. MemberListServlet 는 데이터베이스에서 회원 정보를 가져온다. 그리고 출력을 위해 MemberList.jsp로 실행 위임(인클루딩 방식)
@@ -990,7 +990,7 @@ MySQL 데이터베이스 연결을 실패해본다.
 
 - **예외가 발생한 경우의 화면**
 
-  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.24.23.png">
+  <img src="../capture/스크린샷 2019-09-11 오전 12.24.23.png" width=500>
 
   - 에러 발생시 서블릿을 호출한 톰캣 서버는 서블릿이 던진 예외 객체를 받게 되고, 앞의 그림과 같은 결과 화면을 웹 브라우저에게 보낸다.
 
@@ -1033,7 +1033,7 @@ MySQL 데이터베이스 연결을 실패해본다.
 
 - **실행 결과**
 
-  <img src="../../../../capture/스크린샷 2019-09-11 오전 12.28.24.png">
+  <img src="../capture/스크린샷 2019-09-11 오전 12.28.24.png">
 
 <br>
 
@@ -1071,5 +1071,736 @@ MemberList.jsp 에서 인클루딩을 이용하여 상단 내용을 출력하는
   </div>
   ```
 
-  
+<br>
 
+### MemberList.jsp 에서 Header.jsp 와 Tail.jsp를 포함하기
+
+- **web/member/MemberList.jsp**
+
+  ```jsp
+  <%@ page import="spms.vo.Member" %>
+  <%@ page import="java.util.ArrayList" %>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>회원 목록</title>
+    </head>
+    <body>
+      <jsp:include page="/Header.jsp"/>
+      <h1>회원 목록</h1>
+      <p><a href="add">신규 회원</a></p>
+      <%
+      ArrayList<Member> members = (ArrayList<Member>) request.getAttribute("members");
+      for (Member member : members) {
+        %>
+      <%=member.getNo()%>,
+      <a href="update?no=<%=member.getNo()%>"><%=member.getName()%>
+      </a>,
+      <%=member.getEmail()%>,
+      <%=member.getCreateDate()%>
+      <a href="delete?no=<%=member.getNo()%>">[삭제]</a><br>
+      <%} %>
+      <jsp:include page="/Tail.jsp"/>
+    </body>
+  </html>
+  ```
+
+  - \<jsp:include> 태그를 추가한다.
+
+    ```jsp
+    <jsp:include page="/Header.jsp"/>
+    ...
+    <jsp:include page="/Tail.jsp"/>
+    ```
+
+    이 태그들은 JSP 엔진에 의해 서블릿이 생성될 때 다음과 같은 코드로 바뀐다.
+
+    ```java
+    RequestDispatcher rd = request.getRequestDispatcher("/Header.jsp");
+    rd.include(request, response);
+    ```
+
+- **실행 결과**
+
+  <img src="../capture/스크린샷 2019-09-11 오전 12.35.50.png" width=300>
+
+<br>
+
+# 5.6. 데이터 보관소
+
+서블릿 기술은 데이터를 공유하기 위한 방안으로 네 가지 종류의 데이터 보관소를 제공한다.
+
+- **네 가지 객체 보관소**
+
+  <img src="https://t1.daumcdn.net/cfile/tistory/2459234C55AD02A621">
+
+  - **ServletContext 보관소** : 웹 애플리케이션이 시작될 때 생성되어 종료될 때까지 유지된다. 웹 애플리케이션이 실행되는 동안에는 모든 서블릿이 사용할 수 있다. <u>JSP에서는 application 변수를 통해 이 보관소를 참조할 수 있다.</u>
+  - **HttpSession 보관소** : 클라이언트의 최초 요청시 생성되어 브라우저를 닫을 때까지 유지된다. <u>JSP에서는 session 변수를 통해 이 보관소를 참조할 수 있다.</u>
+  - **ServletRequest 보관소** : 클라이언트의 요청이 들어올 때 생성되어, 클라이언트에게 응답할 때까지 유지된다. 이 보관소는 포워딩이나 인클루딩하는 서블릿들 사이에서 값을 공유할 때 유용하다. <u>JSP에서는 request 변수를 통해 이 보관소를 참조할 수 있다.</u>
+  - **JspContext 보관소** : JSP 페이지를 실행하는 동안만 유지된다. <u>JSP에서는 pageContext 변수를 통해 이 보관소를 참조할 수 있다.</u>
+
+<br>
+
+- **보관소 값 저장 및 조회**
+
+  ```java
+  보관소객체.setAttribute(키, 값);	// 값 저장
+  보관소객체.getAttribute(키);		// 값 조회
+  ```
+
+  - 보관소 객체의 사용법은 Map 객체의 put()과 get() 메서드와 유사하다.
+
+<br>
+
+## 5.6.1. ServletContext의 활용
+
+어떤 객체를 웹 애플리케이션이 실행되는 동안 모든 서블릿들과 공유하고 싶다면 ServletContext 보관소에 저장하면 된다.
+
+**데이터베이스 커넥션 객체를 웹 애플리케이션이 시작될 때 생성하여 ServletContext 에 저장한다.** 이렇게 하면 데이터베이스를 이용하는 **모든 서블릿은 ServletContext에서 DB 커넥션 객체를 얻을 수 있다.**
+
+<br>
+
+### 공유 자원을 준비하는 서블릿 작성
+
+웹 애플리케이션이 시작될 때 데이터베이스 커넥션 객체를 준비하는 서블릿을 작성한다.
+
+- **src/spms/servlets/AppInitServlet.java**
+
+  ```java
+  package spms.servlets;
+  
+  import javax.servlet.ServletConfig;
+  import javax.servlet.ServletContext;
+  import javax.servlet.ServletException;
+  import javax.servlet.http.HttpServlet;
+  import java.sql.Connection;
+  import java.sql.DriverManager;
+  
+  public class AppInitServlet extends HttpServlet {
+  
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+      System.out.println("AppInitServlet 준비");
+      super.init(config);
+      
+      try {
+        ServletContext sc = this.getServletContext();
+        Class.forName(sc.getInitParameter("driver"));
+        Connection conn = DriverManager.getConnection(
+            sc.getInitParameter("url"),
+            sc.getInitParameter("username"),
+            sc.getInitParameter("password"));
+        sc.setAttribute("conn", conn);
+      } catch (Throwable e) {
+        throw new ServletException(e);
+      }
+    }
+  
+    @Override
+    public void destroy() {
+      System.out.println("AppInitServlet 마무리");
+      super.destroy();
+      
+      Connection conn = (Connection) this.getServletContext().getAttribute("conn");
+      try {
+        if (conn != null && !conn.isClosed()) conn.close();
+      } catch (Exception e) {}
+    }
+    
+  }
+  ```
+
+  - **init()는 서블릿 객체가 생성될 때 딱 한 번 호출되기** 때문에 공유 자원을 준비하는 코드가 놓이기에 최적의 장소이다.
+
+  - **super.init(config)** 을 사용하면 상속받은 기능은 그대로 두고 새로운 작업을 추가할 수 있다.
+
+  - 데이터베이스 커넥션 객체를 준비한 다음, **모든 서블릿들이 사용할 수 있도록 ServletContext 객체에 저장한다.**
+
+    ```java
+    sc.setAttribute("conn", conn);
+    ```
+
+  - **destory()** 는 서블릿이 언로드 될 때 호출되므로 init()에서 준비했던 **DB 커넥션 객체를 해제시켜 준다.**
+
+    ```java
+    if (conn != null && !conn.isClosed) {
+      conn.close();
+    }
+    ```
+
+<br>
+
+### 서블릿 배치와 \<load-on-startup> 태그
+
+DD 파일(web.xml)에 AppInitServlet 의 배치 정보를 추가한다.
+
+- **web/WEB-INF/web.xml**
+
+  ```xml
+  ...
+  <!-- 서블릿 선언 -->
+  <servlet>
+    <servlet-name>AppInitServlet</servlet-name>
+    <servlet-class>spms.servlets.AppInitServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  ...
+  ```
+
+  - **\<load-on-startup> 태그를 지정하면,** 해당 서블릿은 웹 애플리케이션이 시작될 때 자동으로 생성된다. 이 태그의 값은 생성 순서이다.
+
+<br>
+
+### ServletContext에 저장된 DB 커넥션 사용
+
+이제 서블릿에서 DB 커넥션을 직접 준비할 필요 없이, ServletContext 보관소에 저장된 DB 커넥션 객체를 꺼내 쓰면 된다.
+
+- **src/spms/servlets/MemberListServlet.java**
+
+  ```java
+  ...
+  @WebServlet("/member/list")
+  public class MemberListServlet extends HttpServlet {
+  
+    private ServletContext sc;
+  
+    @Override
+    public void init() throws ServletException {
+      super.init();
+      sc = this.getServletContext();
+    }
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      String query = "select mno, mname, email, cre_date" +
+          " from members" +
+          " order by mno";
+  
+      // ServletContext 객체에서 커넥션 객체를 불러옴
+      try (Connection connection = (Connection) sc.getAttribute("conn");
+           PreparedStatement statement = connection.prepareStatement(query);
+           ResultSet resultSet = statement.executeQuery()) {
+        resp.setContentType("text/html; charset=UTF-8");
+        ArrayList<Member> members = new ArrayList<>();
+  ...
+  ```
+
+- **실행 결과**
+
+  <img src="../capture/스크린샷 2019-09-11 오후 12.25.01.png" width=300>
+
+<br>
+
+## 5.6.2. HttpSession의 활용 - 로그인
+
+HttpSession 객체는 클라이언트 당 한 개가 생성된다. 로그인되어 있는 동안 지속적으로 사용할 데이터를 HttpSession 객체에 저장한다.
+
+- **로그인 시나리오**
+
+  ```mermaid
+  sequenceDiagram
+  웹브라우저->>LoginServlet: (1) GET 요청
+  LoginServlet->>LoginForm.jsp: (2) 포워딩
+  LoginForm.jsp-->>웹브라우저: (3) 응답
+  웹브라우저->>LoginServlet: (4) POST 요청
+  alt (5)성공
+  LoginServlet->>Member: 생성
+  LoginServlet->>HttpSession: 저장
+  LoginServlet-->>웹브라우저: (6) 리다이렉트
+  else (5)실패
+  LoginServlet->>LoginForm.jsp: 실패
+  LoginForm.jsp-->>웹브라우저: (6) 리프래시(/auth/login)
+  end
+  ```
+
+  1. 웹 브라우저에서 '/auth/login' 서블릿을 요청
+  2. LoginServlet은 LoginForm.jsp로 화면 출력 작업 위임
+  3. LoginForm.jsp는 로그인 입력폼을 만들어 출력
+  4. 사용자가 입력한 정보를 가지고 다시 '/auth/login' 서블릿을 POST 요청
+  5. LoginServlet은 이메일과 암호가 일치하는 회원 정보를 데이터베이스에서 찾아서 값 객체 'Member'에 담는다. 또한 Member 객체를 HttpSession 객체에 보관한다. 만약 이메일과 암호가 일치하는 회원을 찾지 못한다면, LoginFail.jsp로 작업을 위임한다.
+  6. 로그인 성공시 회원 목록 페이지로 리다이렉트, 실패시 로그인 입력폼으로 리프래시
+
+<br>
+
+### 로그인 컨트롤러 만들기
+
+- **src/spms/servlets/LogInServlet.java**
+
+  ```java
+  package spms.servlets;
+  
+  import spms.vo.Member;
+  
+  import javax.servlet.RequestDispatcher;
+  import javax.servlet.ServletContext;
+  import javax.servlet.ServletException;
+  import javax.servlet.annotation.WebServlet;
+  import javax.servlet.http.HttpServlet;
+  import javax.servlet.http.HttpServletRequest;
+  import javax.servlet.http.HttpServletResponse;
+  import javax.servlet.http.HttpSession;
+  import java.io.IOException;
+  import java.sql.Connection;
+  import java.sql.PreparedStatement;
+  import java.sql.ResultSet;
+  
+  @WebServlet("/auth/login")
+  public class LogInServlet extends HttpServlet {
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      RequestDispatcher rd = req.getRequestDispatcher(
+          "/auth/LogInForm.jsp");
+      rd.forward(req, resp);
+    }
+  
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      String query = "select mname, email from members where email=? and pwd=?";
+      ServletContext sc = this.getServletContext();
+      Connection conn = (Connection) sc.getAttribute("conn");
+      ResultSet resultSet = null;
+  
+      try (PreparedStatement preparedStatement = conn.prepareStatement(query)
+      ) {
+        preparedStatement.setString(1, req.getParameter("email"));
+        preparedStatement.setString(2, req.getParameter("password"));
+        resultSet = preparedStatement.executeQuery();
+        if (resultSet.next()) {
+          Member member = new Member()
+              .setEmail(resultSet.getString("email"))
+              .setName(resultSet.getString("mname"));
+          HttpSession session = req.getSession();
+          session.setAttribute("member", member);
+  
+          resp.sendRedirect("../member/list");
+        } else {
+          RequestDispatcher rd = req.getRequestDispatcher("/auth/LogInFail.jsp");
+          rd.forward(req, resp);
+        }
+      } catch (Exception e) {
+        throw new ServletException(e);
+      } finally {
+        try { if (resultSet != null) resultSet.close();} catch (Exception e) {}
+      }
+    }
+  
+  }
+  ```
+
+  - 웹 브라우저로부터 GET 요청이 들어오면 LogInForm.jsp 로 포워딩 한다.
+
+    ```java
+    rd.forward(request, response);
+    ```
+
+    > JSP에서 다시 서블릿으로 돌아올 필요가 없으므로 포워딩 처리
+
+  - 사용자가 이메일과 암호를 입력한 후 POST 요청을 하면 데이터베이스로부터 회원 정보를 조회한다. 그리고 회원이 존재하면 값 객체 Member에 회원 정보를 담는다.
+
+    ```java
+    Member memeber = new Member()
+      .setEmail(rs.getString("email"))
+      .setName(rs.getString("mname"));
+    ```
+
+  - Member 객체를 HttpSession 에 보관
+
+    ```java
+    HttpSession session = request.getSession();
+    session.setAttribute("member", member);
+    ```
+
+  - 로그인 성공시, /member/list 로 리다이렉트
+
+    ```java
+    rd.forward(req,resp);
+    ```
+
+  - 로그인 실패시, /auth/LogInFail.jsp로 포워딩
+
+    ```java
+    RequestDispatcher rd = req.getRequestDispatcher(
+    "/auth/LogInFail.jsp");
+    rd.forward(req, resp);
+    ```
+
+<br>
+
+### 로그인 입력폼 만들기
+
+- **web/auth/LogInForm.jsp**
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>로그인</title>
+    </head>
+    <body>
+      <h2>사용자 로그인</h2>
+      <form action="/auth/login" method="post">
+        이메일: <input type="text" name="email"><br>
+        암호: <input type="password" name="password"><br>
+        <input type="submit" value="로그인">
+      </form>
+    </body>
+  </html>
+  ```
+
+  - 로그인 입력폼 값을 서버에 전달할 때는 post 요청을 하도록 \<form> 태그를 설정
+
+    ```jsp
+    <form action="login" method="post">
+    ```
+
+<br>
+
+### 로그인 실패 시 출력작업을 수행할 JSP 만들기
+
+- **web/auth/LogInFail.jsp**
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <meta http-equiv="Refresh" content="1;url=login">
+      <title>로그인 실패</title>
+    </head>
+    <body>
+      <p>로그인 실패입니다. 이메일 또는 암호가 맞지 않습니다.!<br>
+        잠시 후에 다시 로그인 화면으로 갑니다.</p>
+    </body>
+  </html>
+  ```
+
+  - 1초가 지난 다음에는 다시 서버에 로그인 입력폼을 요청하도록 설정
+
+    ```jsp
+    <meta http-equiv="Refresh" content="1;url=login">
+    ```
+
+<br>
+
+### 실행 결과
+
+로그인 입력폼
+
+<img src="../capture/스크린샷 2019-09-11 오후 3.58.58.png" width=500>
+
+<br>
+
+로그인 실패 안내 문구 출력 화면
+
+<img src="../capture/스크린샷 2019-09-11 오후 3.59.52.png" width=500>
+
+<br>
+
+로그인 성공 후 회원 목록 화면
+
+<img src="../capture/스크린샷 2019-09-11 오후 4.01.11.png" width=300>
+
+### 5.6.3. HttpSession의 활용 - 로그인 정보 사용
+
+LogInServlet에서 HttpSession 보관소에 저장한 Member 객체를 Header.jsp에서 꺼내 보자.
+
+- **HttpSession 객체로부터 Member 얻기 시나리오**
+
+  ```sequence
+  웹브라우저->MemberListServlet: (1) GET 요청
+  MemberListServlet->MemberList.jsp: (2) 인클루딩
+  MemberList.jsp->Header.jsp: (3) 인클루딩
+  Header.jsp->HttpSession: (4) Member 객체 꺼내기
+  HttpSession-->Header.jsp: Member 객체 반환
+  Header.jsp->Member: (5) getName()
+  Header.jsp-->MemberList.jsp: 반환
+  MemberList.jsp->Tail.jsp: (6) 인클루딩
+  Tail.jsp-->MemberList.jsp: 반환
+  MemberList.jsp-->MemberListServlet: 반환
+  MemberListServlet-->웹브라우저: (7) 응답
+  ```
+
+  1. 로그인을 성공하면, 서버로부터 리다이렉트 응답을 받는다.
+  2. MemberListServlet은 데이터베이스에서 회원 목록을 가져온 후, MemberList.jsp에 화면 출력 작업을 위임
+  3. MemberList.jsp는 Header.jsp를 인클루딩
+  4. Header.jsp는 HttpSession 객체에 보관된 로그인 회원의 정보(Member 객체) 추출
+  5. 또한 Header.jsp 는 Member 객체로부터 이름을 추출 및 출력
+  6. MemberList.jsp는 Tail.jsp를 인클루딩
+  7. MemberListServlet은 MemberList.jsp가 작업한 내용을 최종적으로 출력 후 응답 완료
+
+<br>
+
+### 페이지 헤더에 로그인 사용자 이름 출력
+
+- **web/Header.jsp**
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <%@ page import="spms.vo.Member" %>
+  <%
+      Member member = (Member) session.getAttribute("member");
+  %>
+  <div style="background-color: #00008b; color: #ffffff; height: 20px; padding: 5px;">
+      SPMS(Simple Project Management System)
+      <span style="float: right;">
+      <%=member.getName()%>
+      <a style="color: white;"
+         href="<%=request.getContextPath()%>/auth/logout">로그아웃</a>
+      </span>
+  </div>
+  ```
+
+  - JSP 내장 객체 session을 사용하여 "member" 라는 키로 저장된 값을 꺼낸다.
+
+    ```jsp
+    <%
+    Member member = (Member) session.getAttribute("member");
+    %>
+    ```
+
+  - HttpSession 보관소에서 꺼낸 Member 객체로부터 이름을 알아내어 사용자 고르인 정보를 출력
+
+    ```java
+    <span style="float: right;">
+    <%=member.getName()%>
+    <a style="color:white;"
+      href="<%=request.getContextPath()%>/auth/logout">로그아웃</a>
+    </span>
+    ```
+
+<br>
+
+- **로그인 사용자의 이름을 출력한 화면**
+
+  <img src="../capture/스크린샷 2019-09-11 오후 4.32.50.png" width=500>
+
+<br>
+
+## 5.6.4. HttpSession의 활용 - 로그아웃
+
+- **로그아웃 시나리오**
+
+```sequence
+웹브라우저->LogOutServlet: (1) 로그아웃 요청
+LogOutServlet->HttpSession: (2) invalidate()
+LogOutServlet-->웹브라우저: (3) 리다이렉트(/auth/login)
+웹브라우저->MemberListServlet: (4) 회원 목록 요청
+MemberListServlet->MemberList.jsp: (5) 인클루딩
+MemberList.jsp->Header.jsp: (6) 인클루딩
+Header.jsp->HttpSession: (7) Member 객체 꺼내기
+HttpSession-->Header.jsp: null 반환
+```
+
+1. '로그아웃' 링크를 클릭하면, 웹 브라우저는 LogOutServlet 을 요청
+2. LogOutServlet은 HttpSession 객체를 없애기 위해 invalidate() 호출
+3. 로그인 입력폼으로 리다이렉트 하고, 다시 로그인 입력폼을 출력할 때 HttpSession 객체를 새로 생성
+4. 새로 생성된 HttpSession을 가지고 회원 목록 서블릿을 실행. MemberListServlet은 데이터베이스에서 회원 목록 정보를 가져옴
+5. 그리고 MemberListServlet은 MemberList.jsp에 화면 출력을 위임합니다.
+6. MemberList.jsp는 화면 상단의 내용을 출력하기 위해 Header.jsp를 인클루딩 한다.
+7. null 반환
+
+### 로그아웃 서블릿 생성
+
+- **src/spms/servlets/LogOutServlet.java**
+
+  ```java
+  package spms.servlets;
+  
+  import javax.servlet.ServletException;
+  import javax.servlet.annotation.WebServlet;
+  import javax.servlet.http.HttpServlet;
+  import javax.servlet.http.HttpServletRequest;
+  import javax.servlet.http.HttpServletResponse;
+  import javax.servlet.http.HttpSession;
+  import java.io.IOException;
+  
+  @WebServlet("/auth/logout")
+  public class LogOutServlet extends HttpServlet {
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      HttpSession session = req.getSession();
+      session.invalidate();
+  
+      resp.sendRedirect("login");
+    }
+    
+  }
+  ```
+
+  - HttpSession 객체를 무효화 하기 위해 invalidate()를 호출한다. 세션 객체가 무효화 된다는 것은 HttpSession 객체가 제거된다는 것을 의미한다.
+
+    ```java
+    session.invalidate();
+    ```
+
+<br>
+
+## 5.6.5. ServletRequest의 활용
+
+**ServletRequest 객체에 데이터를 보관하면 포워딩이나 인클루딩을 통해 협업하는 서블릿(JSP 포함)끼리 데이터를 공유할 수 있다.** 그 이유는 request와 response를 같이 사용하기 때문이다.
+
+- **LogInServlet.java의 일부분**
+
+  ```java
+  protected void doGet(
+    HttpServletRequest request, HttpServletResponse response)) 
+      throws ServletException, IOException {
+    RequestDispatcher rd = request.getRequestDispatcher("/auth/LogInForm.jsp");
+    rd.forward(request, response);
+  }
+  ```
+
+  - forward() 를 호출할 때 doGet() 의 매개변수 값을 그대로 넘겨 주고 있다. 즉, forward 매개변수를 통해 ServletRequest를 공유하는 것을 알 수 있다.
+
+<br>
+
+- **협업을 하는 서블릿들 끼리의 ServletRequest의 공유**
+
+  <img src="../capture/스크린샷 2019-09-11 오후 6.57.47.png">
+
+  - MVC 아키텍처에 예제들을 보면, ServletRequest 보관소를 통해 컨트롤러와 뷰 사이에서 데이터를 공유하였다.
+
+<br>
+
+## 5.6.6. JspContext의 활용
+
+**JspContext** 보관소는 JSP 페이지를 실행할 때 생성되고, 실행이 완료되면 이 객체는 제거된다. 따라서 **JSP 페이지 내부에서만 사용될 데이터를 공유할 때 사용한다.**
+
+- **JspContext 활용 사례**
+
+  <img src="../capture/스크린샷 2019-09-11 오후 7.50.31.png">
+
+<br>
+
+- **MemberList.jsp 의 일부 코드**
+
+  ```jsp
+  <body>
+    <jsp:include page="/Header.jsp"/>
+    <h1>회원목록</h1>
+    <p><a href='add'>신규 회원</a></p>
+  ```
+
+  - **\<jsp:include>** 와 같은 태그의 값을 다루는 객체를 **'태그 핸들러'** 라고 부른다. 바로 이 **태그 핸들러에게 데이터를 전달하고자 할 때 JspContext 보관소를 사용한다.**
+
+<br>
+
+# 5.7. JSP 액션 태그의 사용
+
+JSP 페이지를 작성할 때, 가능한 자바 코드의 삽입을 최소화하는 것이 유지 보수에 좋다. 이를 위해 JSP에서는 기본으로 제공하는 태그들의 집합 **'JSP 액션(Action)'** 을 제공한다.
+
+JSP 액션을 사용하면 자바로 직접 코딩하는 것보다 빠르고 쉽게 원하는 기능을 작성할 수 있다.
+
+<br>
+
+**JSP 2.2 기준, JSP 액션 태그들**
+
+| 액션               | 설명                                                         |
+| ------------------ | ------------------------------------------------------------ |
+| \<jsp:useBean>     | 자바 인스턴스를 새로 만들어 보관소에 저장하는 코드를 생성한다. 자바 인스턴스를 자바 빈 이라고 부른다. |
+| \<jsp:setProperty> | 자바 빈의 프로퍼티 값을 설정. setter 메서드 역할             |
+| \<jsp:getProperty> | 자바 빈의 프로퍼티 값을 꺼낸다. getter 메서드 역할           |
+| \<jsp:include>     | 정적(HTML, 텍스트 파일 등) 또는 동적 자원(서블릿/JSP)을 인클루딩 |
+| \<jsp:forward>     | 현재 페이지의 실행을 멈추고 다른 정적 자원(HTML)이나 동적 자원(JSP)을 포워딩 |
+| \<jsp:param>       | jsp:include, jsp:forward, jsp:params 의 자식 태그로 사용할 수 있다. |
+| \<jsp:plugin>      | OBJECT 또는 EMBED HTML 태그를 생성한다.                      |
+| \<jsp:element>     | 임의의 XML 태그나 HTML 태그를 생성한다.                      |
+
+<br>
+
+## 5.7.1. JSP 액션 태그 - \<jsp:useBean>
+
+### jsp:useBean 문법
+
+```jsp
+<jsp:useBean id="이름" scope="page|request|session|application" 
+             class="클래스명" type="타입명"/>
+```
+
+<br>
+
+### \<jsp:useBean> 사용 예
+
+```jsp
+<jsp:useBean id="members"
+             scope="request"
+             class="java.util.ArrayList"
+             type="java.util.ArrayList<spms.vo.Member>"/>
+```
+
+- **id 속성** : 객체의 이름을 설정
+- **scope 속성** : 기존의 객체를 조회하거나 새로 만든 객체를 저장할 보관소로 지정한다. 네 가지 보관소 중에서 하나를 지정할 수 있다. **'page'** 는 JspContext, **'request'** 는 ServletRequest, **'session'** 은 HttpSession, **'application'** 은 ServletContext 보관소를 의미. 기본값은 'page' 이다.
+- **class 속성** : 자바 객체를 생성할 때 사용할 클래스 이름을 지정. 
+- **type 속성** : 참조 변수를 선언할 때 사용할 타입의 이름이다. 클래스 이름 또는 인터페이스 이름이 올 수 있다.
+
+<br>
+
+**앞의 액션 태그를 자바 코드로 변환했을 때**
+
+```java
+java.util.ArrayList<spms.vo.Member> members =
+  (java.util.ArrayList<spms.vo.Member>)request.getAttribute("members");
+if (members == null) {
+  members = new java.util.ArrayList();
+  request.setAttribute("members", members);
+}
+```
+
+<br>
+
+## 5.7.2. \<jsp:useBean>의 활용
+
+회원 목록 화면을 만드는 MemberList.jsp 와 Header.jsp에 \<jsp:useBean> 액션 태그를 적용해보자.
+
+- **web/member/MemberList.jsp**
+
+  ```jsp
+  ...
+  <jsp:useBean id="members"
+               scope="request"
+               class="java.util.ArrayList"
+               type="java.util.ArrayList<spms.vo.Member>"/>
+  ...
+  <%
+  //    ArrayList<Member> members = (ArrayList<Member>) request.getAttribute("members");
+  	for (Member member : members) {
+  %>
+  ...
+  ```
+
+- **web/Header.jsp**
+
+  ```jsp
+  ...
+  <jsp:useBean id="member"
+               scope="session"
+               class="spms.vo.Member"/>
+  ...
+  <%
+  //    Member member = (Member) session.getAttribute("member");
+  %>
+  ```
+
+<br>
+
+## 5.7.3. JSP 액션 태그의 존재 의의
+
+비즈니스 로직을 처리하는 부분과 화면을 처리하는 부분을 나눠서 개발할 수 있다.
+
+- **JSP 액션 태그와 업무의 분리**
+
+  <img src="https://t1.daumcdn.net/cfile/tistory/99B80B3359D1D5CA24">
+
+<br>
+
+# 실력 향상 과제
+
+회원 목록을 출력하는 MemberListServlet 처럼 회원 등록, 변경, 삭제 서블릿도 JSP를 도입하여 뷰 컴포넌트를 분리하세요.
+
+1. **회원 등록 - MemberAddServlet에서 입력화면을 생성하는 코드를 제거하고, 대신 MemberForm.jsp 를 만들어 화면 출력을 위임하세요. 또한, MemberAddServlet에서 회원 정보를 등록하다가 오류가 발생했을 때 /Error.jsp로 위임하도록 코드를 변경하세요.**
+
+   

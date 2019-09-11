@@ -19,14 +19,6 @@ public class MemberListServlet extends HttpServlet {
 
   private ServletContext sc;
 
-  static {
-    try {
-      Class.forName("org.postgresql.Driver");
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
   @Override
   public void init() throws ServletException {
     super.init();
@@ -38,13 +30,10 @@ public class MemberListServlet extends HttpServlet {
     String query = "select mno, mname, email, cre_date" +
         " from members" +
         " order by mno";
+    Connection connection = (Connection) sc.getAttribute("conn");
 
     // 데이터 베이스 연결 및 쿼리 실행
-    try (Connection connection = DriverManager.getConnection(
-        sc.getInitParameter("url"),
-        sc.getInitParameter("username"),
-        sc.getInitParameter("password"));
-         PreparedStatement statement = connection.prepareStatement(query);
+    try (PreparedStatement statement = connection.prepareStatement(query);
          ResultSet resultSet = statement.executeQuery()) {
       resp.setContentType("text/html; charset=UTF-8");
       ArrayList<Member> members = new ArrayList<>();
@@ -53,10 +42,10 @@ public class MemberListServlet extends HttpServlet {
       // 그리고 Member 객체를 ArrayList 에 추가한다.
       while (resultSet.next()) {
         members.add(new Member()
-        .setNo(resultSet.getInt("mno"))
-        .setName(resultSet.getString("mname"))
-        .setEmail(resultSet.getString("email"))
-        .setCreateDate(resultSet.getDate("cre_date")));
+            .setNo(resultSet.getInt("mno"))
+            .setName(resultSet.getString("mname"))
+            .setEmail(resultSet.getString("email"))
+            .setCreateDate(resultSet.getDate("cre_date")));
       }
 
       // request 에 회원 목록 데이터 보관한다.
