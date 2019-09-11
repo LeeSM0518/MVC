@@ -11,28 +11,17 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-@WebServlet("/member/add")
-public class MemberAddServlet extends HttpServlet {
+@WebServlet("/member/delete")
+public class MemberDeleteServlet extends HttpServlet {
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    RequestDispatcher rd = req.getRequestDispatcher(
-        "/member/MemberAdd.jsp");
-    rd.forward(req, resp);
-  }
-
-  @Override
-  protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
-        " (?, ?, ?, now(), now())";
     ServletContext sc = this.getServletContext();
-    Connection connection = (Connection)sc.getAttribute("conn");
-    try (PreparedStatement ps = connection.prepareStatement(query)) {
-      ps.setString(1, req.getParameter("email"));
-      ps.setString(2, req.getParameter("password"));
-      ps.setString(3, req.getParameter("name"));
-      ps.executeUpdate();
+    Connection conn = (Connection) sc.getAttribute("conn");
+    String query = "delete from members where mno=" + req.getParameter("no");
 
+    try (PreparedStatement ps = conn.prepareStatement(query)){
+      ps.executeUpdate();
       resp.sendRedirect("list");
     } catch (Exception e) {
       req.setAttribute("error", e);
@@ -40,5 +29,4 @@ public class MemberAddServlet extends HttpServlet {
       rd.forward(req, resp);
     }
   }
-
 }

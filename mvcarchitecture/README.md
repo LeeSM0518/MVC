@@ -1801,6 +1801,7 @@ if (members == null) {
 
 회원 목록을 출력하는 MemberListServlet 처럼 회원 등록, 변경, 삭제 서블릿도 JSP를 도입하여 뷰 컴포넌트를 분리하세요.
 
-1. **회원 등록 - MemberAddServlet에서 입력화면을 생성하는 코드를 제거하고, 대신 MemberForm.jsp 를 만들어 화면 출력을 위임하세요. 또한, MemberAddServlet에서 회원 정보를 등록하다가 오류가 발생했을 때 /Error.jsp로 위임하도록 코드를 변경하세요.**
+1. **회원 등록 - MemberAddServlet에서 입력화면을 생성하는 코드를 제거하고, 대신 MemberAdd.jsp 를 만들어 화면 출력을 위임하세요. 또한, MemberAddServlet에서 회원 정보를 등록하다가 오류가 발생했을 때 /Error.jsp로 위임하도록 코드를 변경하세요.**
+2. **회원 삭제 - MemberDeleteServlet에서 삭제를 수행하다가 오류가 발생하면 /Error.jsp로 위임하도록 코드를 변경하세요.**
+3. **회원 상세 정보 조회 및 변경 - MemberUpdateServlet에서 상세 정보 출력을 MemberUpdateForm.jsp에게 포워딩한다. 예외 처리는 /Error.jsp에게 위임하세요.**
 
-   
