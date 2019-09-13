@@ -1802,6 +1802,454 @@ if (members == null) {
 회원 목록을 출력하는 MemberListServlet 처럼 회원 등록, 변경, 삭제 서블릿도 JSP를 도입하여 뷰 컴포넌트를 분리하세요.
 
 1. **회원 등록 - MemberAddServlet에서 입력화면을 생성하는 코드를 제거하고, 대신 MemberAdd.jsp 를 만들어 화면 출력을 위임하세요. 또한, MemberAddServlet에서 회원 정보를 등록하다가 오류가 발생했을 때 /Error.jsp로 위임하도록 코드를 변경하세요.**
+
+   - web/member/MemberUpdate.jsp
+
+     ```jsp
+     <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+     <html>
+       <head>
+         <title>회원 등록</title>
+       </head>
+       <body>
+         <h1>회원 등록</h1>
+         <form action="/member/add" method="post">
+           이름: <input type="text" name="name"><br>
+           이메일: <input type="text" name="email"><br>
+           암호: <input type="password" name="password"><br>
+           <input type="submit" value="추가">
+           <input type="reset" value="취소">
+         </form>
+       </body>
+     </html>
+     ```
+
+   - src/spms/servlets/MemberAddServlet.java
+
+     ```java
+     ...
+     @WebServlet("/member/add")
+     public class MemberAddServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         // JSP로 출력 위임
+         RequestDispatcher rd = req.getRequestDispatcher(
+             "/member/MemberAdd.jsp");
+         // 포워딩
+         rd.forward(req, resp);
+       }
+     
+       @Override
+       protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
+             " (?, ?, ?, now(), now())";
+         ServletContext sc = this.getServletContext();
+         Connection connection = (Connection)sc.getAttribute("conn");
+         try (PreparedStatement ps = connection.prepareStatement(query)) {
+           ps.setString(1, req.getParameter("email"));
+           ps.setString(2, req.getParameter("password"));
+           ps.setString(3, req.getParameter("name"));
+           ps.executeUpdate();
+     
+           // 추가를 완료하고 /member/list 로 리다이렉트
+           resp.sendRedirect("list");
+         } catch (Exception e) {
+           // 에러시 error 정보를 보관한다.
+           req.setAttribute("error", e);
+           // Error.jsp로 에러 화면 출력 위임
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           // 포워딩
+           rd.forward(req, resp);
+         }
+       }
+     
+     }
+     ```
+
+   <br>
+
 2. **회원 삭제 - MemberDeleteServlet에서 삭제를 수행하다가 오류가 발생하면 /Error.jsp로 위임하도록 코드를 변경하세요.**
+
+   - src/spms/serlvets/MemberDeleteServlet.java
+
+     ```java
+     ...
+     @WebServlet("/member/delete")
+     public class MemberDeleteServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+         String query = "delete from members where mno=" + req.getParameter("no");
+     
+         try (PreparedStatement ps = conn.prepareStatement(query)){
+           ps.executeUpdate();
+           resp.sendRedirect("list");
+         } catch (Exception e) {
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     }
+     ```
+
+   <br>
+
 3. **회원 상세 정보 조회 및 변경 - MemberUpdateServlet에서 상세 정보 출력을 MemberUpdateForm.jsp에게 포워딩한다. 예외 처리는 /Error.jsp에게 위임하세요.**
+
+   - web/member/MemberUpdate.jsp
+
+     ```jsp
+     <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+     <jsp:useBean id="updateMember"
+                  scope="request"
+                  class="spms.vo.Member"/>
+     <html>
+       <head>
+         <title>회원정보</title>
+       </head>
+       <body>
+         <h1>회원정보</h1>
+         <form action="/member/update" method="post">
+           번호: <input type="text" name="no" value="<%=updateMember.getNo()%>" readonly><br>
+           이름: <input type="text" name="name" value="<%=updateMember.getName()%>"><br>
+           이메일: <input type="text" name="email" value="<%=updateMember.getEmail()%>"><br>
+           가입일: <%=updateMember.getCreateDate()%><br>
+           <input type="submit" value="저장">
+           <input type="button" value="삭제" onclick="location.href='delete?no=<%=updateMember.getNo()%>'">
+           <input type="button" value="취소" onclick="location.href='list'">
+         </form>
+       </body>
+     </html>
+     ```
+
+   - src/spms/servlets/MemberUpdateServlet.java
+
+     ```java
+     ...
+     @WebServlet("/member/update")
+     public class MemberUpdateServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         String query = "select mno, email, mname, cre_date from members" +
+           " where mno=" + req.getParameter("no");
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+     
+         try (PreparedStatement ps = conn.prepareStatement(query);
+              ResultSet rs = ps.executeQuery()) {
+           rs.next();
+           Member member = new Member()
+             .setName(rs.getString("mname"))
+             .setEmail(rs.getString("email"))
+             .setNo(rs.getInt("mno"))
+             .setCreateDate(rs.getDate("cre_date"));
+           req.setAttribute("updateMember", member);
+           RequestDispatcher rd = req.getRequestDispatcher("/member/MemberUpdate.jsp");
+           rd.forward(req, resp);
+         } catch (Exception e) {
+           e.printStackTrace();
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     
+       @Override
+       protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         String query = "update members set email=?, mname=?, mod_date=now() where mno=?";
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+     
+         try (PreparedStatement ps = conn.prepareStatement(query)) {
+           ps.setString(1, req.getParameter("email"));
+           ps.setString(2, req.getParameter("name"));
+           ps.setInt(3, Integer.parseInt(req.getParameter("no")));
+           ps.executeUpdate();
+     
+           resp.sendRedirect("list");
+         } catch (Exception e) {
+           e.printStackTrace();
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     }
+     ```
+
+<br>
+
+# 5.8. EL 사용하기
+
+**EL(Expression Language)은** 콤마(,)와 대괄호([])를 사용하여 자바 빈의 프로퍼티나 맵, 리스트, 배여르이 값을 보다 쉽게 꺼내게 해주는 기술이다.
+
+<br>
+
+## 5.8.1. EL 표기법
+
+EL은 **${} 와 #{}를** 사용하여 값을 표현한다. 
+
+**${표현식}** 으로 지정된 값은 JSP가 실행될 때 JSP 페이지에 즉시 반영된다. 그래서 **${}을 '즉시 적용(immediate evaluation)'** 이라 부른다. 
+
+**#{표현식}** 으로 지정된 값은 시스템에서 필요하다고 판단될 때 그 값을 사용한다. 그래서 **#{}을 '지연 적용(deferred evaluation)'** 이라 부른다. #{}은 특히 JSF(JavaServer Faces) 기술에서 UI를 만들 때 많이 사용한다.
+
+- **EL 표기법**
+
+  ```jsp
+  ${member.no}			// 객체이름.프로퍼티
+  ${member["no"]}		// 객체이름["프로퍼티"]
+  ```
+
+- **EL 표기법 자바 코드로 변환**
+
+  ```java
+  Member obj = (Member)pageContext.findAttribute("member");
+  int value = obj.getNo();
+  ```
+
+- **PageContext의 findAttribute() 호출시 객체를 찾는 순서**
+
+  1. JspContext
+  2. ServletRequest
+  3. HttpSession
+  4. ServletContext
+  5. null
+
+<br>
+
+### EL에서 검색 범위 지정
+
+EL도 \<jsp:useBean> 처럼 네 군데 보관소에서 값을 꺼낼 수 있다.
+
+- **EL 보관소에서 참조할 때 사용하는 이름**
+  - pageScope => JspContext
+  - requestScope => ServletRequest
+  - sessionScope => HttpSession
+  - applicationScope => ServletContext
+
+객체를 찾는 범위를 지정하게 되면 **해당 보관소에서만 객체를 찾고,** 못 찾으면 null을 반환한다.
+
+<br>
+
+## 5.8.2. JSP에서 제공하는 EL 기본 객체
+
+**EL 기본 객체**
+
+| 객체             | 설명                               | 코드                                 |
+| ---------------- | ---------------------------------- | ------------------------------------ |
+| pageContext      | JSP의 pageContext 객체             | -                                    |
+| servletContext   | ServletContext 객체                | ${pageContext.servletContext.객체명} |
+| session          | HttpSession 객체                   | ${pageContext.session.객체명}        |
+| request          | ServletReqeust 객체                | ${pageContext.request.객체명}        |
+| response         | ServletResponse 객체               | -                                    |
+| param            | 요청 매개변수의 값 조회            | ${param.매개변수명}                  |
+| paramValues      | 요청 매개변수의 값 배열 조회       | ${paramValues.매개변수명}            |
+| header           | HTTP 헤더의 값 조회                | ${header.헤더명}                     |
+| headerValues     | HTTP 헤더의 값 배열 조회           | ${headerValues.헤더명}               |
+| cookie           | 쿠기 값 조회                       | ${cookie.쿠키명}                     |
+| initParam        | 컨텍스트 초기화 매개변수의 값 조회 | ${initParam.매개변수명}              |
+| pageScope        | page 보관소의 값 조회              | ${pageScope.객체명}                  |
+| requestScope     | request 보관소의 값 조회           | ${requestScope.객체명}               |
+| sessionScope     | session 보관소의 값 조회           | ${sessionScope.객체명}               |
+| applicationScope | application 보관소의 값 조회       | ${applicationScope.객체명}           |
+
+<br>
+
+## 5.8.3. 리터럴 표현식
+
+EL 블록에서 사용할 수 있는 값은 문자열, 정수, 부동소수점, 참거짓(Boolean), 널(Null)이 가능하다.
+
+<br>
+
+**EL 표현식**
+
+- **문자열** : ${"test"}, \${'test'}
+- **정수** : ${20}
+- **부동소수점** : ${3.14}
+- **참거짓** : ${true}
+- **null** : ${null}
+
+<br>
+
+### 5.8.4. 값 표현식
+
+자바 객체, 배열, List, Map, ResourceBundle로부터 값을 꺼낼 때 사용하는 EL 표현식
+
+<br>
+
+### 배열에서 값 꺼내기
+
+```jsp
+<%
+pageContext.setAttribute("scores", new int[]{90, 80, 70, 100});
+%>
+<%-- 배열에서 인덱스 2의 값 꺼내기 --%>
+${scores[2]}
+```
+
+<br>
+
+### List 객체에서 값 꺼내기
+
+```jsp
+<%
+List<String> nameList = new LinkedList<String>();
+nameList.add("홍길동");
+nameList.add("임꺽정");
+nameList.add("일지매");
+pageContext.setAttribute("nameList", nameList);
+%>
+<%-- 리스트 객체에서 인덱스 1의 값 꺼내기 --%>
+${nameList[1]}
+```
+
+<br>
+
+### Map 객체에서 값 꺼내기
+
+```jsp
+<%
+Map<String, String> map = new HashMap<>();
+map.put("s01", "홍길동");
+map.put("s02", "임꺽정");
+map.put("s3", "일지매");
+pageContext.setAttribute("map", map);
+%>
+<%-- 맵 객체에서 키 s02로 지정된 값 꺼내기 --%>
+${map.s02}
+```
+
+<br>
+
+### 자바 객체에서 프로퍼티 값 꺼내기
+
+```jsp
+<%
+pageContext.setAttribute("member",
+                        new Member()
+                        .setNo(100)
+                        .setName("홍길동")
+                        .setEmail("hong@test.com"));
+%>
+<%-- 자바빈에서 프로퍼티 email의 값 꺼내기 --%>
+${member.email}
+```
+
+<br>
+
+### ResourceBundle 객체에서 값 꺼내기
+
+- **src/MyResourceBundle.java**
+
+  ```java
+  import java.util.ListResourceBundle;
+  public class MyResourceBundle_ko_KR extends ListResourceBundle {
+    public Object[][] getContents() {
+      return new Object[][] {
+        {"OK", "확인"},
+        {"Cancel", "취소"},
+        {"Reset", "재설정"},
+        {"Submit", "제출"}
+      };
+    }
+  }
+  ```
+
+- **EL 표현식**
+
+  ```jsp
+  <%
+  pageContext.setAttribute("myRB",
+                          ResourceBundle.getBundle("MyResourceBundle"));
+  %>
+  <%-- 리소스번들 객체에서 값 꺼내기 --%>
+  ${myRB.OK}
+  ```
+
+<br>
+
+## 5.8.5. 연산자
+
+EL 블록에서도 간단한 연산을 수행할 수 있다.
+
+<br>
+
+### 산술 연산자
+
+- **EL 표현식**
+
+  더하기(+), 빼기(-), 곱하기(*), 나누기(/, div), 나머지(%, mod) 값을 구하는 연산자
+
+  ```jsp
+  \${10 div 20} = ${10 div 20}
+  \${10 mod 20} = ${10 mod 20}
+  ```
+
+  > **'${' 앞에 '\\'가 붙으면** EL 문법이 아닌 일반 텍스트로 취급한다.
+
+<br>
+
+### 논리 연산자
+
+EL에서 제공하는 논리 연산자는 **AND(&&, and), OR(||, or), NOT(!, not)** 이 있다.
+
+<br>
+
+### 관계 연산자
+
+EL에서 제공하는 관계 연산자는 **같다(==, eq), 같지 않다(!=, ne), 크다(>, gt), 작다 (<, lt), 크거나 같다(>=, ge), 작거나 같다(<=, le)** 가 있다.
+
+<br>
+
+### empty
+
+'empty'는 값이 비어 있거나 null 인지를 조사할 때 사용하는 연산자이다. 값이 null이면 true를 반환한다.
+
+- **EL 표현식**
+
+  ```jsp
+  <%
+  pageContext.setAttribute("title", "EL 연산자!");
+  %>
+  <%-- 자바빈에서 프로퍼티 email의 값 꺼내기 --%>
+  \${empty title} = ${empty titile}
+  \${empty title2} = ${empty title2}
+  ```
+
+- **실행결과**
+
+  ```
+  ${empty title} = true
+  ${empty title2} = false
+  ```
+
+<br>
+
+### 조건
+
+```jsp
+${10 > 20 ? "크다" : "작다"}
+```
+
+<br>
+
+## 5.8.6. 예약 키워드
+
+- **EL에서 사용하는 예약 키워드**
+
+  ```
+  and, or, not, eq, ne, lt, gt, le, ge, ture, false, null, instanceof, empty,
+  div, mod
+  ```
+
+  - JspContext 나 ServletRequest, HttpSession, ServletContext 보관소에 객체를 저장할 때, 그 식별자는 EL의 예약 키워드 이름과 같아서는 안된다.
+
+<br>
+
+## 5.8.7. EL 활용 - 회원 정보 페이지
 

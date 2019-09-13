@@ -13,15 +13,9 @@
 <body>
 <h1>회원 등록</h1>
 <form action="/member/add" method="post">
-    이름: <label>
-    <input type="text" name="name">
-</label><br>
-    이메일: <label>
-    <input type="text" name="email">
-</label><br>
-    암호: <label>
-    <input type="password" name="password">
-</label><br>
+    이름: <input type="text" name="name"><br>
+    이메일: <input type="text" name="email"><br>
+    암호: <input type="password" name="password"><br>
     <input type="submit" value="추가">
     <input type="reset" value="취소">
 </form>
