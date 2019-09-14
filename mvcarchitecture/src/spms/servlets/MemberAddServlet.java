@@ -1,5 +1,8 @@
 package spms.servlets;
 
+import spms.dao.MemberDao;
+import spms.vo.Member;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -9,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 
 @WebServlet("/member/add")
 public class MemberAddServlet extends HttpServlet {
@@ -23,16 +25,19 @@ public class MemberAddServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
-        " (?, ?, ?, now(), now())";
     ServletContext sc = this.getServletContext();
-    Connection connection = (Connection)sc.getAttribute("conn");
-    try (PreparedStatement ps = connection.prepareStatement(query)) {
-      ps.setString(1, req.getParameter("email"));
-      ps.setString(2, req.getParameter("password"));
-      ps.setString(3, req.getParameter("name"));
-      ps.executeUpdate();
+    Connection connection = (Connection) sc.getAttribute("conn");
 
+    try {
+      MemberDao memberDao = new MemberDao();
+      memberDao.setConnection(connection);
+
+      Member member = new Member()
+          .setEmail(req.getParameter("email"))
+          .setPassword(req.getParameter("password"))
+          .setName(req.getParameter("name"));
+
+      memberDao.insert(member);
       resp.sendRedirect("list");
     } catch (Exception e) {
       req.setAttribute("error", e);

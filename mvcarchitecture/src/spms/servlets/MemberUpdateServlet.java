@@ -1,5 +1,6 @@
 package spms.servlets;
 
+import spms.dao.MemberDao;
 import spms.vo.Member;
 
 import javax.servlet.RequestDispatcher;
@@ -11,28 +12,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
 @WebServlet("/member/update")
 public class MemberUpdateServlet extends HttpServlet {
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    String query = "select mno, email, mname, cre_date from members" +
-        " where mno=" + req.getParameter("no");
     ServletContext sc = this.getServletContext();
     Connection conn = (Connection) sc.getAttribute("conn");
 
-    try (PreparedStatement ps = conn.prepareStatement(query);
-         ResultSet rs = ps.executeQuery()) {
-      rs.next();
-      Member member = new Member()
-          .setName(rs.getString("mname"))
-          .setEmail(rs.getString("email"))
-          .setNo(rs.getInt("mno"))
-          .setCreateDate(rs.getDate("cre_date"));
+    try {
+      MemberDao memberDao = new MemberDao();
+      memberDao.setConnection(conn);
+      Member member = memberDao.selectOne(Integer.parseInt(req.getParameter("no")));
       req.setAttribute("updateMember", member);
+
       RequestDispatcher rd = req.getRequestDispatcher("/member/MemberUpdate.jsp");
       rd.forward(req, resp);
     } catch (Exception e) {
@@ -45,15 +39,18 @@ public class MemberUpdateServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    String query = "update members set email=?, mname=?, mod_date=now() where mno=?";
     ServletContext sc = this.getServletContext();
     Connection conn = (Connection) sc.getAttribute("conn");
 
-    try (PreparedStatement ps = conn.prepareStatement(query)) {
-      ps.setString(1, req.getParameter("email"));
-      ps.setString(2, req.getParameter("name"));
-      ps.setInt(3, Integer.parseInt(req.getParameter("no")));
-      ps.executeUpdate();
+    try {
+      Member member = new Member();
+      member.setEmail(req.getParameter("email"))
+          .setName(req.getParameter("name"))
+          .setNo(Integer.parseInt(req.getParameter("no")));
+
+      MemberDao memberDao = new MemberDao();
+      memberDao.setConnection(conn);
+      memberDao.update(member);
 
       resp.sendRedirect("list");
     } catch (Exception e) {

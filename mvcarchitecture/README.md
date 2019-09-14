@@ -2253,3 +2253,1221 @@ ${10 > 20 ? "크다" : "작다"}
 
 ## 5.8.7. EL 활용 - 회원 정보 페이지
 
+## 5.8.3. 리터럴 표현식
+
+EL 블록에서 사용할 수 있는 값은 문자열, 정수, 부동소수점, 참거짓(Boolean), 널(Null)이 가능하다.
+
+<br>
+
+**EL 표현식**
+
+- **문자열** : ${"test"}, \${'test'}
+- **정수** : ${20}
+- **부동소수점** : ${3.14}
+- **참거짓** : ${true}
+- **null** : ${null}
+
+<br>
+
+### 5.8.4. 값 표현식
+
+자바 객체, 배열, List, Map, ResourceBundle로부터 값을 꺼낼 때 사용하는 EL 표현식
+
+<br>
+
+### 배열에서 값 꺼내기
+
+```jsp
+<%
+pageContext.setAttribute("scores", new int[]{90, 80, 70, 100});
+%>
+<%-- 배열에서 인덱스 2의 값 꺼내기 --%>
+${scores[2]}
+```
+
+<br>
+
+### List 객체에서 값 꺼내기
+
+```jsp
+<%
+List<String> nameList = new LinkedList<String>();
+nameList.add("홍길동");
+nameList.add("임꺽정");
+nameList.add("일지매");
+pageContext.setAttribute("nameList", nameList);
+%>
+<%-- 리스트 객체에서 인덱스 1의 값 꺼내기 --%>
+${nameList[1]}
+```
+
+<br>
+
+### Map 객체에서 값 꺼내기
+
+```jsp
+<%
+Map<String, String> map = new HashMap<>();
+map.put("s01", "홍길동");
+map.put("s02", "임꺽정");
+map.put("s3", "일지매");
+pageContext.setAttribute("map", map);
+%>
+<%-- 맵 객체에서 키 s02로 지정된 값 꺼내기 --%>
+${map.s02}
+```
+
+<br>
+
+### 자바 객체에서 프로퍼티 값 꺼내기
+
+```jsp
+<%
+pageContext.setAttribute("member",
+                        new Member()
+                        .setNo(100)
+                        .setName("홍길동")
+                        .setEmail("hong@test.com"));
+%>
+<%-- 자바빈에서 프로퍼티 email의 값 꺼내기 --%>
+${member.email}
+```
+
+<br>
+
+### ResourceBundle 객체에서 값 꺼내기
+
+- **src/MyResourceBundle.java**
+
+  ```java
+  import java.util.ListResourceBundle;
+  public class MyResourceBundle_ko_KR extends ListResourceBundle {
+    public Object[][] getContents() {
+      return new Object[][] {
+        {"OK", "확인"},
+        {"Cancel", "취소"},
+        {"Reset", "재설정"},
+        {"Submit", "제출"}
+      };
+    }
+  }
+  ```
+
+- **EL 표현식**
+
+  ```jsp
+  <%
+  pageContext.setAttribute("myRB",
+                          ResourceBundle.getBundle("MyResourceBundle"));
+  %>
+  <%-- 리소스번들 객체에서 값 꺼내기 --%>
+  ${myRB.OK}
+  ```
+
+<br>
+
+## 5.8.5. 연산자
+
+EL 블록에서도 간단한 연산을 수행할 수 있다.
+
+<br>
+
+### 산술 연산자
+
+- **EL 표현식**
+
+  더하기(+), 빼기(-), 곱하기(*), 나누기(/, div), 나머지(%, mod) 값을 구하는 연산자
+
+  ```jsp
+  \${10 div 20} = ${10 div 20}
+  \${10 mod 20} = ${10 mod 20}
+  ```
+
+  > **'${' 앞에 '\\'가 붙으면** EL 문법이 아닌 일반 텍스트로 취급한다.
+
+<br>
+
+### 논리 연산자
+
+EL에서 제공하는 논리 연산자는 **AND(&&, and), OR(||, or), NOT(!, not)** 이 있다.
+
+<br>
+
+### 관계 연산자
+
+EL에서 제공하는 관계 연산자는 **같다(==, eq), 같지 않다(!=, ne), 크다(>, gt), 작다 (<, lt), 크거나 같다(>=, ge), 작거나 같다(<=, le)** 가 있다.
+
+<br>
+
+### empty
+
+'empty'는 값이 비어 있거나 null 인지를 조사할 때 사용하는 연산자이다. 값이 null이면 true를 반환한다.
+
+- **EL 표현식**
+
+  ```jsp
+  <%
+  pageContext.setAttribute("title", "EL 연산자!");
+  %>
+  <%-- 자바빈에서 프로퍼티 email의 값 꺼내기 --%>
+  \${empty title} = ${empty titile}
+  \${empty title2} = ${empty title2}
+  ```
+
+- **실행결과**
+
+  ```
+  ${empty title} = true
+  ${empty title2} = false
+  ```
+
+<br>
+
+### 조건
+
+```jsp
+${10 > 20 ? "크다" : "작다"}
+```
+
+<br>
+
+## 5.8.6. 예약 키워드
+
+- **EL에서 사용하는 예약 키워드**
+
+  ```
+  and, or, not, eq, ne, lt, gt, le, ge, ture, false, null, instanceof, empty,
+  div, mod
+  ```
+
+  - JspContext 나 ServletRequest, HttpSession, ServletContext 보관소에 객체를 저장할 때, 그 식별자는 EL의 예약 키워드 이름과 같아서는 안된다.
+
+<br>
+
+## 5.8.7. EL 활용 - 회원 정보 페이지
+
+회원 정보 페이지는 UI를 생성할 때, 컨트롤러가 작업한 결과물을 request에서 꺼내 쓴다. 바로 이 request 에서 값을 꺼내는 부분을 EL로 대체해보자.
+
+- **MemberUpdate.jsp**
+
+  ```jsp
+  <%--
+    Created by IntelliJ IDEA.
+    User: sangminlee
+    Date: 11/09/2019
+    Time: 11:16 오후
+    To change this template use File | Settings | File Templates.
+  --%>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+      <title>회원정보</title>
+  </head>
+  <body>
+  <h1>회원정보</h1>
+  <form action="/member/update" method="post">
+      번호: <input type="text" name="no" value="${updateMember.no}" readonly><br>
+      이름: <input type="text" name="name" value="${updateMember.name}"><br>
+      이메일: <input type="text" name="email" value="${updateMember.email}"><br>
+      가입일: ${updateMember.createDate}<br>
+      <input type="submit" value="저장">
+      <input type="button" value="삭제" onclick="location.href='delete?no=${updateMember.no}'">
+      <input type="button" value="취소" onclick="location.href='list'">
+  </form>
+  </body>
+  </html>
+  ```
+
+  - \<jsp:useBean> 과 \<%=%> 태그를 제거한다.
+
+  - \<%=%>을 EL 표기법으로 바꾼다.
+
+    ```jsp
+    ${updateMember.no}, ${updateMember.name}, ...
+    ```
+
+<br>
+
+### 객체 범위 명시하기
+
+만약 page 보관소에 같은 이름의 객체가 존재하면 순서상 page에 보관된 객체가 사용된다. 이 문제를 해결하기 위해서는 보관소 범위를 정확히 지정해주면 된다.
+
+```jsp
+이름: <input type='text' name='name' value='${requestScope.member.name}'><br>
+```
+
+<br>
+
+# 5.9. JSTL 사용하기
+
+**'JSTL(JSP Standard Tag Library)'** 은 JSP의 기본 태그가 아니고 JSP의 확장 태그이다. 이것을 사용하면 JSP 페이지에서 자바 코딩을 줄일 수 있다.
+
+<br>
+
+## 5.9.1 JSTL 라이브러리 준비
+
+https://mvnrepository.com/artifact/javax.servlet.jsp.jstl/jstl-api 에서 jar 파일을 다운받아서 lib에 추가해준다.
+
+<br>
+
+## 5.9.2. JSTL 주요 태그의 사용법
+
+### 사용할 태그 라이브러리 선언
+
+JSTL 확장 태그를 사용하려면 그 태그의 라이브러리를 선언해야 한다.
+
+- **태그 라이브러리 선언하는 문법**
+
+  ```jsp
+  <%@ taglib uri="사용할 태그의 라이브러리 URI" prefix="접두사" %>
+  ```
+
+  - **<% taglib %>** : JSP의 지시자 태그
+  - **uri** : 태그 라이브러리의 네임 스페이스 이름
+  - **prefix** : JSTL 태그를 사용할 때 태그 이름 앞에 붙일 접두사
+
+<br>
+
+- **태그 라이브러리와 URI 접두사**
+
+| 태그 라이브러리 | 접두사 | 네임스페이스의 URI 식별자              |
+| --------------- | ------ | -------------------------------------- |
+| Core            | c      | http://java.sun.com/jsp/jstl/core      |
+| XML             | x      | http://java.sun.com/jsp/jstl/xml       |
+| I18N            | fmt    | http://java.sun.com/jsp/jstl/fmt       |
+| Database        | sql    | http://java.sun.com/jsp/jstl/sql       |
+| Functions       | fn     | http://java.sun.com/jsp/jstl/functions |
+
+<br>
+
+### JSTL 태그
+
+| 태그 라이브러리        | 기능              | 태그들: 부모태그(자식태그)                                   |
+| ---------------------- | ----------------- | ------------------------------------------------------------ |
+| 기본(Core)             | 변수 지원         | remove, set                                                  |
+| "                      | 흐름 제어         | choose(when, otherwise), forEach, forTokens, if              |
+| "                      | URL 관리          | import(param), redirect(param), url(param)                   |
+| "                      | 기타              | catch, out                                                   |
+| XML                    | 기본              | out, parse, set                                              |
+| "                      | 흐름 제어         | choose(when, otherwise), forEach, if                         |
+| "                      | 변환              | transform(param)                                             |
+| 국제화(I18N)           | 로케일            | setLocale, requestEncoding                                   |
+| "                      | 메시지 포맷       | bundle, message(param), setBundle                            |
+| "                      | 숫자 및 날짜 포맷 | formatNumber, formatDate, parseDate, parseNumber, setTimeZone, timeZone |
+| 데이터베이스           | 데이터 소스 설정  | setDateSource                                                |
+| "                      | SQL               | query(dateParam, param), transaction, update(dateParam, param) |
+| 기타 함수들(Functions) | 집합의 원소개수   | length                                                       |
+| "                      | 문자열 처리       | toUpperCase, toLowerCase, substring, substringAfter, substringBefore, trim, replace, indexOf, startsWith, endsWith, contains, containsIgnoreCase, split, join, escapeXml |
+
+<br>
+
+### \<c:out> 태그
+
+출력문을 만드는 태그
+
+- **문법**
+
+  ```jsp
+  <c:out value="출력할 값" default="기본값"/>
+  <c:out value="출력할 값">기본값</c:out>
+  ```
+
+<br>
+
+### \<c:set> 태그
+
+변수를 생성하거나 기존 변수의 값을 덮어쓸 때 사용. 이 태그로 생성한 변수는 JSP 페이지의 로컬 변수가 아니라 보관소(JspContext, ServletRequest, HttpSession, ServletContext)에 저장된다.
+
+- **문법**
+
+  ```jsp
+  // value 속성을 사용하여 값 설정
+  <c:set var="변수명" value="값" scope="page|request|session|application"/>
+  // 태그 콘텐츠를 사용하여 값 설정
+  <c:set var="변수명" scope="page|request|session|application">값</c:set>
+  ```
+
+<br>
+
+### \<c:set> 태그를 이용한 객체의 프로퍼티 값 설정
+
+\<c: set> 을 이용하면, 보관소에 저장된 객체의 프로퍼티 값도 바꿀 수 있다.
+
+1. **web/WEB-INF 로 lib 추가**
+2. **web/WEB-INF/web.xml 에 welcome-file로 index.jsp 추가**
+
+3. **web/index.jsp**
+
+   ```jsp
+   <%@ page contentType="text/html;charset=UTF-8" language="java"%>
+   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+   <%!
+     public static class MyMember {
+       int no;
+       String name;
+   
+       public int getNo() {
+         return no;
+       }
+   
+       public void setNo(int no) {
+         this.no = no;
+       }
+   
+       public String getName() {
+         return name;
+       }
+   
+       public void setName(String name) {
+         this.name = name;
+       }
+     }
+   %>
+   <%
+   MyMember member = new MyMember();
+   member.setNo(100);
+   member.setName("홍길동");
+   session.setAttribute("member", member);
+   %>
+   <html>
+     <head>
+       <title>Test</title>
+     </head>
+     <body>
+       <h3>객체의 프로퍼티 값 변경</h3>
+       ${member.name}<br>
+       <c:set target="${member}" property="name" value="임꺽정"/>
+       ${member.name}<br>
+     </body>
+   </html>
+   ```
+
+   - \<c:set>을 사용하여 객체의 프로퍼티 값을 설정할 때는 셋터 메서드의 리턴 타입이 void 이어야 한다.
+
+<br>
+
+### \<c:remove> 태그
+
+보관소에 저장된 값을 제거하는 태그
+
+- **문법**
+
+  ```jsp
+  <c:remove var="변수명" scope="page|request|session|application"/>
+  ```
+
+- **예제**
+
+  ```jsp
+  <h3>보관소에 저장된 값 제거</h3>
+  <% request.setAttribute("username1", "홍길동"); %>
+  \${username1} = ${username1}<br>
+  <c:remove var="username1"/>
+  \${username1} = ${username1}<br>
+  ```
+
+- **실행 결과**
+
+  ```
+  보관소에 저장된 값 제거
+  ${username1} = 홍길동
+  ${username1} =
+  ```
+
+<br>
+
+### \<c:if> 태그
+
+이 태그의 test 속성값이 참이면, 콘텐츠가 실행된다. 참거짓 테스트 결과를 보관소에 저장할 수도 있다.
+
+- **문법**
+
+  ```jsp
+  <c:if test="조건" var="변수명" scope="page|request|session|application">
+    콘텐츠
+  </c:if>
+  ```
+
+- **예제**
+
+  ```jsp
+  <h3>c:if 태그</h3>
+  <c:if test="${10 > 20}" var="result1">
+    10은 20보다 크다.<br>
+  </c:if>
+  ${result1}<br>
+  <c:if test="${10 < 20}" var="result2">
+    10은 20보다 작다.<br>
+  </c:if>
+  ${result2}<br>
+  ```
+
+- **실행 결과**
+
+  ```
+  c:if 태그
+  false
+  10은 20보다 작다.
+  true
+  ```
+
+<br>
+
+### \<c:choose> 태그
+
+자바의 switch, case 등과 같은 기능을 수행한다. 즉 여러 가지 조건에 따라 다른 작업을 해야 할 필요가 있을 때 이 태그를 사용한다.
+
+- **문법**
+
+  ```jsp
+  <c:choose>
+    <c: when test="참거짓 값"></c:when>
+    <c: when test="참거짓 값"></c:when>
+    ...
+    <c: otherwise></otherwise>
+  </c:choose>
+  ```
+
+- **예제**
+
+  ```jsp
+  <h3>c:choose 태그</h3>
+  <c:set var="userid" value="admin"/>
+  <c:choose>
+    <c:when test="${userid == 'hong'}">
+      홍길동님 반값습니다.
+    </c:when>
+    <c:when test="${userid == 'leem'}">
+      임꺽정님 반값습니다.
+    </c:when>
+    <c:when test="${userid == 'admin'}">
+      관리자 전용 페이지 입니다.
+    </c:when>
+    <c:otherwise>
+      등록되지 않은 사용자입니다.
+    </c:otherwise>
+  </c:choose>
+  ```
+
+- **실행 결과**
+
+  ```
+  c:choose 태그
+  관리자 전용 페이지 입니다.
+  ```
+
+<br>
+
+### \<c:forEach> 태그
+
+반복적인 작업을 정의할 때 사용한다. 목록에서 값을 꺼내어 처리하고 싶을 때 이 태그를 사용한다.
+
+- **문법**
+
+  ```jsp
+  <c:forEach var="변수명" items="목록데이터" begin="시작인덱스" end="종료인덱스">
+    콘텐츠
+  </c:forEach>
+  ```
+
+- **예제**
+
+  ```jsp
+  <h3>c:forEach 태그</h3>
+  <%
+  session.setAttribute("nameList",
+                       new String[]{"홍길동", "임꺽정", "일지매"});
+  %>
+  <ul>
+    <c:forEach var="name" items="${nameList}">
+      <li>${name}</li>
+    </c:forEach>
+  </ul>
+  <ul>
+    <c:forEach var="no" begin="1" end="6">
+      <li><a href="jstl0${no}.jsp">JSTL 예제 ${no}</a></li>
+    </c:forEach>
+  </ul>
+  ```
+
+- **실행 결과**
+
+  ```
+  c:forEach 태그
+  * 홍길동
+  * 임꺽정
+  * 일지매
+  * JSTL 예제 1
+  * JSTL 예제 2
+  * JSTL 예제 3
+  * JSTL 예제 4
+  * JSTL 예제 5
+  * JSTL 예제 6
+  ```
+
+<br>
+
+### \<c:forTokens> 태그
+
+이 태그를 사용하면 문자열을 특정 구분자(delimiter)로 분리하여 반복문을 돌릴 수 있다.
+
+- **예제**
+
+  ```jsp
+  <h3>c:forTokens 태그</h3>
+  <%
+  request.setAttribute("tokens", "v1=20&v2=30&op=+");
+  %>
+  <ul>
+    <c:forTokens var="item" items="${tokens}" delims="&">
+      <li>${item}</li>
+    </c:forTokens>
+  </ul>
+  ```
+
+<br>
+
+### \<c:url> 태그
+
+URL을 만들 때 사용하는 태그이다. 이 태그를 사용하면 매개변수를 포함한 URL을 손쉽게 만들 수 있다.
+
+- **예제**
+
+  ```jsp
+  <h3>c:url 태그</h3>
+  <c:url var="calcUrl" value="http://localhost:8080/calc/Calculator.jsp">
+    <c:param name="v1" value="20"/>
+    <c:param name="v2" value="30"/>
+    <c:param name="op" value="+"/>
+  </c:url>
+  <a href="${calcUrl}">계산하기</a>
+  ```
+
+<br>
+
+### \<c:import> 태그
+
+여러 사이트의 내용을 가져와서 새로운 서비스를 만드는 매쉬업(Mashup)에 매우 유용한 태그이다. url 속성에 콘텐츠가 있는 주소를 지정하면, 해당 주소로 요청하고, 응답 결과를 받아서 반환한다.
+
+- **예제**
+
+  ```jsp
+  <h3>c:import 태그</h3>
+  <textarea rows="10" cols="80">
+    <c:import url="http://www.zdnet.co.kr/Include2/ZDNetKorea_News.xml"/>
+  </textarea>
+  ```
+
+  - 위 코드에서 var 속성을 추가로 설정하면 URL 응답 결과를 바로 출력하지 않고 var에 설정된 이름으로 보관소에 저장한다.
+
+<br>
+
+### \<c:redirect> 태그
+
+이 태그를 사용하여 리다이렉트를 처리할 수 있다. 
+
+- **예제**
+
+  ```jsp
+  <c:redirect url="http://www.daum.net"/>
+  ```
+
+<br>
+
+### \<fmt:parseDate> 태그
+
+날짜 형식으로 작성된 문자열을 분석하여 java.util.Date 객체를 생성한다. 그리고 저장된 보관소에 저장한다.
+
+- **예제**
+
+  ```jsp
+  <h3>fmt:parseDate 태그</h3>
+  <fmt:parseDate var="date1" value="2013-11-16" pattern="yyyy-MM-dd"/>
+  날짜: ${date1}<br>
+  ```
+
+- **실행 결과**
+
+  ```
+  fmt:parseDate 태그
+  날짜: Sat Nov 16 00:00:00 KST 2013
+  ```
+
+<br>
+
+### \<fmt:formatDate> 태그
+
+날짜 객체로부터 우리가 원하는 형식으로 날짜를 표현하고자 할 때 이 태그를 사용한다.
+
+- **예제**
+
+  ```jsp
+  <h3>fmt:formatDate 태그</h3>
+  <fmt:formatDate var="date2" value="${date1}" pattern="MM/dd/yy"/>
+  날짜: ${date2}
+  ```
+
+- **실행 결과**
+
+  ```
+  fmt:formatDate 태그
+  날짜: 11/16/13
+  ```
+
+<br>
+
+## 5.9.3. JSTL 활용 - 회원 목록 페이지에서 자바 코드 없애기
+
+1. JSP 페이지에 자바 코드가 있으면 웹 디자이너와 웹 퍼블리셔와 함께 작업하기 어렵다.
+2. JSP 페이지에 자바 코드를 넣지 않으면, 자연스럽게 JSP 페이지에 비즈니스 로직을 작성하지 않게 된다.
+
+위와 같은 이유로 JSTL 과 EL 을 사용하여 JSP 파일에서 자바 코드를 없애야 한다.
+
+<br>
+
+- **web/member/MemberList.jsp**
+
+  ```jsp
+  <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>회원 목록</title>
+    </head>
+    <body>
+      <jsp:include page="/Header.jsp"/>
+      <h1>회원 목록</h1>
+      <p><a href="/member/add">신규 회원</a></p>
+      <c:forEach var="member" items="${members}">
+        ${member.no},
+        <a href="update?no=${member.no}">${member.name}</a>,
+        ${member.email},
+        ${member.createDate}
+        <a href="delete?no=${member.no}">[삭제]</a><br>
+      </c:forEach>
+      <jsp:include page="/Tail.jsp"/>
+    </body>
+  </html>
+  ```
+
+  - **\<%@ tag lib %> 지시자를** 사용하여 JSTL 기본(Core) 태그 라이브러리를 선언한다.
+  - 반복문을 **\<c:forEach> JSTL 태그로** 대체한다.
+
+<br>
+
+# 5.10. DAO 만들기
+
+서블릿으로부터 분리해야 하는 기능은 데이터베이스와 연동하여 데이터를 처리하는 부분이다. 이렇게 **데이터 처리를 전문으로 하는 객체를 "DAO(data access object)"** 라고 부른다.
+
+<br>
+
+- **DAO의 분리**
+
+  <img src="../../../../capture/스크린샷 2019-09-14 오후 3.54.18.png">
+
+  - DAO는 데이터베이스나 파일, 메모리 등을 이용하여 애플리케이션 데이터를 생성, 조회, 변경, 삭제하는 역할을 수행한다. 
+  - 업무 로직에서 데이터 처리 부분을 분리하여 별도의 객체로 정의하면, 여러 업무에서 공통으로 사용할 수 있기 때문에 유지보수가 쉬워지고 재사용성이 높아진다.
+
+<br>
+
+## 5.10.1. DAO 사용하기
+
+MemberListServlet에서 데이터 처리 로직을 분리하여 MemberDao를 정의한다.
+
+<br>
+
+- **DAO가 적용된 후의 회원 목록 조회 시나리오**
+
+  ```sequence
+  웹브라우저->MemberListServlet: (1)요청
+  MemberListServlet->MemberDao: (2)selectList()
+  MemberDao->Database: (3)SELECT
+  Database-->MemberDao: 결과
+  MemberDao->Member: (4)목록생성
+  MemberDao-->MemberListServlet: List<Member>
+  MemberListServlet->MemberList.jsp: (5)인클루딩
+  MemberList.jsp->Member: (6)참조
+  MemberList.jsp-->MemberListServlet: 회원 목록 화면
+  MemberListServlet-->웹브라우저: (7)응답
+  ```
+
+<br>
+
+## 5.10.2. DAO 생성
+
+- **src/spms/dao/MemberDao.java**
+
+  ```java
+  package spms.dao;
+  
+  import spms.vo.Member;
+  
+  import java.sql.Connection;
+  import java.sql.PreparedStatement;
+  import java.sql.ResultSet;
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  public class MemberDao {
+  
+    Connection connection;
+  
+    public void setConnection(Connection connection) {
+      this.connection = connection;
+    }
+  
+    public List<Member> selectList() throws Exception {
+      String query = "select mno, mname, email, cre_date" +
+          " from members" +
+          " order by mno";
+      try (PreparedStatement ps = connection.prepareStatement(query);
+           ResultSet rs = ps.executeQuery()) {
+        ArrayList<Member> members = new ArrayList<>();
+  
+        while (rs.next()) {
+          members.add(new Member()
+          .setNo(rs.getInt("mno"))
+          .setName(rs.getString("mname"))
+          .setEmail(rs.getString("email"))
+          .setCreateDate(rs.getDate("cre_date")));
+        }
+        return members;
+      } catch (Exception e) {
+        throw e;
+      }
+    }
+  
+  }
+  ```
+
+<br>
+
+### Connection 객체 주입
+
+MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 설정되어야 한다. 이렇게 **작업에 필요한 객체를 외부로부터 주입 받는 것을 '의존성 주입(DI, Dependency Injection)'** 이라고 부른다. **다른 말로 '역제어(IoC, Inbersion of Control)'** 라고도 부른다.
+
+그래서 MemberDao 의 Connection 을 설정해주는 셋터 메서드는 MemberListServlet에서 호출된다.
+
+<br>
+
+## 5.10.3. 서블릿에서 DAO 사용하기
+
+- **src/spms/servlets/MemberListServlet.java**
+
+  ```java
+  ...
+  @Override
+  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    Connection connection = (Connection) sc.getAttribute("conn");
+  
+    // 데이터 베이스 연결 및 쿼리 실행
+    try {
+      MemberDao memberDao = new MemberDao();
+      memberDao.setConnection(connection);
+  
+      req.setAttribute("members", memberDao.selectList());
+      resp.setContentType("text/html; charset=UTF-8");
+  
+      RequestDispatcher rd = req.getRequestDispatcher(
+        "/member/MemberList.jsp");
+      rd.include(req, resp);
+  
+    } catch (Exception e) {
+      e.printStackTrace();
+      req.setAttribute("error", e);
+      RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+      rd.forward(req, resp);
+    }
+  }
+  ...
+  ```
+
+  - MemberListServlet이 할 일은, 클라이언트의 요청에 대해 어떤 Dao를 사용하고, 어느 JSP로 그 결과를 보내야 하는지 조정(Control)하는 것이다.
+
+<br>
+
+이제서야 컴포넌트 별로 역할 구분이 명확해졌다. **서블릿은 컨트롤러, Dao는 모델, JSP는 뷰의 역할을 수행한다.**
+
+<br>
+
+# 실력 향상 과제
+
+1. MemberDao 클래스에 다음 메서드를 추가한다.
+
+   ```java
+   public int insert(Member member) throws Exception { /* 회원 등록 */ }
+   public int delete(int no) throws Exception { /* 회원 삭제 */ }
+   public Member selectOne(int no) throws Exception { /* 회원 상세 정보 조회 */ }
+   public int update(Member member) throws Exception { /* 회원 정보 변경 */ }
+   public Member exist(String email, String password) throws Exception 
+   { /* 있으면 Member 객체 리턴, 없으면 null 리턴 */ }
+   ```
+
+   - **src/spms/dao/MemberDao.java**
+
+     ```java
+     package spms.dao;
+     
+     import spms.vo.Member;
+     
+     import java.sql.Connection;
+     import java.sql.PreparedStatement;
+     import java.sql.ResultSet;
+     import java.sql.SQLException;
+     import java.util.ArrayList;
+     import java.util.List;
+     
+     public class MemberDao {
+     
+       Connection connection;
+     
+       public void setConnection(Connection connection) {
+         this.connection = connection;
+       }
+     
+       public List<Member> selectList() throws Exception {
+         String query = "select mno, mname, email, cre_date" +
+             " from members" +
+             " order by mno";
+         try (PreparedStatement ps = connection.prepareStatement(query);
+              ResultSet rs = ps.executeQuery()) {
+           ArrayList<Member> members = new ArrayList<>();
+     
+           while (rs.next()) {
+             members.add(new Member()
+                 .setNo(rs.getInt("mno"))
+                 .setName(rs.getString("mname"))
+                 .setEmail(rs.getString("email"))
+                 .setCreateDate(rs.getDate("cre_date")));
+           }
+           return members;
+         }
+       }
+     
+       public int insert(Member member) throws Exception {
+         int success;
+         String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
+             " (?, ?, ?, now(), now())";
+     
+         try (PreparedStatement ps = connection.prepareStatement(query)) {
+           ps.setString(1, member.getEmail());
+           ps.setString(2, member.getPassword());
+           ps.setString(3, member.getName());
+           success = ps.executeUpdate();
+         }
+     
+         return success;
+       }
+     
+       public int delete(int no) throws Exception {
+         int success;
+         String query = "delete from members where mno=?";
+     
+         try (PreparedStatement ps = connection.prepareStatement(query)) {
+           ps.setInt(1, no);
+           success = ps.executeUpdate();
+         }
+     
+         return success;
+       }
+     
+       public Member selectOne(int no) throws Exception {
+         Member member;
+         String query = "select mno, email, mname, cre_date from members" +
+             " where mno=" + no;
+     
+         try (PreparedStatement ps = connection.prepareStatement(query);
+              ResultSet rs = ps.executeQuery()) {
+           rs.next();
+           member = new Member()
+               .setNo(no)
+               .setEmail(rs.getString("email"))
+               .setName(rs.getString("mname"))
+               .setCreateDate(rs.getDate("cre_date"));
+         }
+     
+         return member;
+       }
+     
+       public int update(Member member) throws Exception {
+         int success = 0;
+         String query = "update members set email=?, mname=?, mod_date=now() where mno=?";
+     
+         try (PreparedStatement ps = connection.prepareStatement(query)) {
+           ps.setString(1, member.getEmail());
+           ps.setString(2, member.getName());
+           ps.setInt(3, member.getNo());
+           success = ps.executeUpdate();
+         } catch (SQLException e) {
+           System.out.println(e.getSQLState());
+           System.out.println(e.getMessage());
+         }
+     
+         return success;
+       }
+     
+       public Member exist(String email, String password) throws Exception {
+         Member member = null;
+         String query = "select mno, mname, cre_date, mod_date from members" +
+             " where email=? and pwd=?";
+     
+         try (PreparedStatement ps = connection.prepareStatement(query)) {
+           ps.setString(1, email);
+           ps.setString(2, password);
+           ResultSet rs = ps.executeQuery();
+     
+           if (rs.next()) {
+             member = new Member()
+                 .setName(rs.getString("mname"))
+                 .setEmail(email)
+                 .setNo(rs.getInt("mno"))
+                 .setCreateDate(rs.getDate("cre_date"))
+                 .setModifiedDate(rs.getDate("mod_date"))
+                 .setPassword(password);
+           }
+         } catch (Exception e) {
+           e.printStackTrace();
+         }
+     
+         return member;
+       }
+     
+     }
+     ```
+
+     <br>
+
+2. MemberAddServlet 클래스 변경 - MemberDao 의 insert()를 사용하여 회원 정보를 추가한다.
+
+   - **src/spms/servlets/MemberAddServlet.java**
+
+     ```java
+     package spms.servlets;
+     
+     import spms.dao.MemberDao;
+     import spms.vo.Member;
+     
+     import javax.servlet.RequestDispatcher;
+     import javax.servlet.ServletContext;
+     import javax.servlet.ServletException;
+     import javax.servlet.annotation.WebServlet;
+     import javax.servlet.http.HttpServlet;
+     import javax.servlet.http.HttpServletRequest;
+     import javax.servlet.http.HttpServletResponse;
+     import java.io.IOException;
+     import java.sql.Connection;
+     
+     @WebServlet("/member/add")
+     public class MemberAddServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         RequestDispatcher rd = req.getRequestDispatcher(
+             "/member/MemberAdd.jsp");
+         rd.forward(req, resp);
+       }
+     
+       @Override
+       protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         ServletContext sc = this.getServletContext();
+         Connection connection = (Connection) sc.getAttribute("conn");
+     
+         try {
+           MemberDao memberDao = new MemberDao();
+           memberDao.setConnection(connection);
+     
+           Member member = new Member()
+               .setEmail(req.getParameter("email"))
+               .setPassword(req.getParameter("password"))
+               .setName(req.getParameter("name"));
+     
+           memberDao.insert(member);
+           resp.sendRedirect("list");
+         } catch (Exception e) {
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     
+     }
+     ```
+
+   <b>
+
+3. MemberUpdateServlet 클래스 변경 - MemberDao 의 selectOne() 과 update()를 사용하여 회원 정보를 변경한다.
+
+   - **src/spms/servlets/MemberUpdateServlet.java**
+
+     ```java
+     package spms.servlets;
+     
+     import spms.dao.MemberDao;
+     import spms.vo.Member;
+     
+     import javax.servlet.RequestDispatcher;
+     import javax.servlet.ServletContext;
+     import javax.servlet.ServletException;
+     import javax.servlet.annotation.WebServlet;
+     import javax.servlet.http.HttpServlet;
+     import javax.servlet.http.HttpServletRequest;
+     import javax.servlet.http.HttpServletResponse;
+     import java.io.IOException;
+     import java.sql.Connection;
+     
+     @WebServlet("/member/update")
+     public class MemberUpdateServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+     
+         try {
+           MemberDao memberDao = new MemberDao();
+           memberDao.setConnection(conn);
+           Member member = memberDao.selectOne(Integer.parseInt(req.getParameter("no")));
+           req.setAttribute("updateMember", member);
+     
+           RequestDispatcher rd = req.getRequestDispatcher("/member/MemberUpdate.jsp");
+           rd.forward(req, resp);
+         } catch (Exception e) {
+           e.printStackTrace();
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     
+       @Override
+       protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+     
+         try {
+           Member member = new Member();
+           member.setEmail(req.getParameter("email"))
+               .setName(req.getParameter("name"))
+               .setNo(Integer.parseInt(req.getParameter("no")));
+     
+           MemberDao memberDao = new MemberDao();
+           memberDao.setConnection(conn);
+           memberDao.update(member);
+     
+           resp.sendRedirect("list");
+         } catch (Exception e) {
+           e.printStackTrace();
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     }
+     ```
+
+   <br>
+
+4. MemberDeleteServlet 클래스 변경 - MemberDao 의 delete()을 사용하여 회원 정보를 삭제 한다.
+
+   - **src/spms/servlets/MemberDeleteServlet.java**
+
+     ```java
+     package spms.servlets;
+     
+     import spms.dao.MemberDao;
+     
+     import javax.servlet.RequestDispatcher;
+     import javax.servlet.ServletContext;
+     import javax.servlet.ServletException;
+     import javax.servlet.annotation.WebServlet;
+     import javax.servlet.http.HttpServlet;
+     import javax.servlet.http.HttpServletRequest;
+     import javax.servlet.http.HttpServletResponse;
+     import java.io.IOException;
+     import java.sql.Connection;
+     
+     @WebServlet("/member/delete")
+     public class MemberDeleteServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+     
+         try {
+           MemberDao memberDao = new MemberDao();
+           memberDao.setConnection(conn);
+           memberDao.delete(Integer.parseInt(req.getParameter("no")));
+           resp.sendRedirect("list");
+         } catch (Exception e) {
+           req.setAttribute("error", e);
+           e.printStackTrace();
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     }
+     ```
+
+   <br>
+
+5. LogInServlet 클래스 변경 - MemberDao 의 exist() 메서드를 이용하여 사용자 인증을 처리한다.
+
+   - **src/spms/servlets/LogInServlet.java**
+
+     ```java
+     package spms.servlets;
+     
+     import spms.dao.MemberDao;
+     import spms.vo.Member;
+     
+     import javax.servlet.RequestDispatcher;
+     import javax.servlet.ServletContext;
+     import javax.servlet.ServletException;
+     import javax.servlet.annotation.WebServlet;
+     import javax.servlet.http.HttpServlet;
+     import javax.servlet.http.HttpServletRequest;
+     import javax.servlet.http.HttpServletResponse;
+     import javax.servlet.http.HttpSession;
+     import java.io.IOException;
+     import java.sql.Connection;
+     
+     @WebServlet("/auth/login")
+     public class LogInServlet extends HttpServlet {
+     
+       @Override
+       protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         RequestDispatcher rd = req.getRequestDispatcher(
+             "/auth/LogInForm.jsp");
+         rd.forward(req, resp);
+       }
+     
+       @Override
+       protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+         ServletContext sc = this.getServletContext();
+         Connection conn = (Connection) sc.getAttribute("conn");
+     
+         try {
+           MemberDao memberDao = new MemberDao();
+           memberDao.setConnection(conn);
+           Member member = memberDao.exist(req.getParameter("email"), req.getParameter("password"));
+           if (member != null) {
+             HttpSession session = req.getSession();
+             session.setAttribute("member", member);
+             resp.sendRedirect("../member/list");
+           } else {
+             RequestDispatcher rd = req.getRequestDispatcher("/auth/LogInFail.jsp");
+             rd.forward(req, resp);
+           }
+         } catch (Exception e) {
+           req.setAttribute("error", e);
+           RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+           rd.forward(req, resp);
+         }
+       }
+     
+     }
+     ```
+
+<br>
