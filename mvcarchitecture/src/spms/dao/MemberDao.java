@@ -1,5 +1,6 @@
 package spms.dao;
 
+import spms.util.DBConnectionPool;
 import spms.vo.Member;
 
 import java.sql.Connection;
@@ -11,17 +12,19 @@ import java.util.List;
 
 public class MemberDao {
 
-  Connection connection;
+  private DBConnectionPool connPool;
 
-  public void setConnection(Connection connection) {
-    this.connection = connection;
+  public void setDbConnectionPool(DBConnectionPool connPool) {
+    this.connPool = connPool;
   }
 
   public List<Member> selectList() throws Exception {
     String query = "select mno, mname, email, cre_date" +
         " from members" +
         " order by mno";
-    try (PreparedStatement ps = connection.prepareStatement(query);
+    Connection conn = connPool.getConnection();
+
+    try (PreparedStatement ps = conn.prepareStatement(query);
          ResultSet rs = ps.executeQuery()) {
       ArrayList<Member> members = new ArrayList<>();
 
@@ -33,6 +36,8 @@ public class MemberDao {
             .setCreateDate(rs.getDate("cre_date")));
       }
       return members;
+    } finally {
+      if (conn != null) connPool.returnConnection(conn);
     }
   }
 
@@ -41,11 +46,15 @@ public class MemberDao {
     String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
         " (?, ?, ?, now(), now())";
 
+    Connection connection = connPool.getConnection();
+
     try (PreparedStatement ps = connection.prepareStatement(query)) {
       ps.setString(1, member.getEmail());
       ps.setString(2, member.getPassword());
       ps.setString(3, member.getName());
       success = ps.executeUpdate();
+    } finally {
+      if (connection != null) connPool.returnConnection(connection);
     }
 
     return success;
@@ -55,9 +64,13 @@ public class MemberDao {
     int success;
     String query = "delete from members where mno=?";
 
+    Connection connection = connPool.getConnection();
+
     try (PreparedStatement ps = connection.prepareStatement(query)) {
       ps.setInt(1, no);
       success = ps.executeUpdate();
+    } finally {
+      if (connection != null) connPool.returnConnection(connection);
     }
 
     return success;
@@ -68,6 +81,8 @@ public class MemberDao {
     String query = "select mno, email, mname, cre_date from members" +
         " where mno=" + no;
 
+    Connection connection = connPool.getConnection();
+
     try (PreparedStatement ps = connection.prepareStatement(query);
          ResultSet rs = ps.executeQuery()) {
       rs.next();
@@ -76,6 +91,8 @@ public class MemberDao {
           .setEmail(rs.getString("email"))
           .setName(rs.getString("mname"))
           .setCreateDate(rs.getDate("cre_date"));
+    } finally {
+      if (connection != null) connPool.returnConnection(connection);
     }
 
     return member;
@@ -85,6 +102,8 @@ public class MemberDao {
     int success = 0;
     String query = "update members set email=?, mname=?, mod_date=now() where mno=?";
 
+    Connection connection = connPool.getConnection();
+
     try (PreparedStatement ps = connection.prepareStatement(query)) {
       ps.setString(1, member.getEmail());
       ps.setString(2, member.getName());
@@ -93,6 +112,8 @@ public class MemberDao {
     } catch (SQLException e) {
       System.out.println(e.getSQLState());
       System.out.println(e.getMessage());
+    } finally {
+      if (connection != null) connPool.returnConnection(connection);
     }
 
     return success;
@@ -102,6 +123,8 @@ public class MemberDao {
     Member member = null;
     String query = "select mno, mname, cre_date, mod_date from members" +
         " where email=? and pwd=?";
+
+    Connection connection = connPool.getConnection();
 
     try (PreparedStatement ps = connection.prepareStatement(query)) {
       ps.setString(1, email);
@@ -119,6 +142,8 @@ public class MemberDao {
       }
     } catch (Exception e) {
       e.printStackTrace();
+    } finally {
+      if (connection != null) connPool.returnConnection(connection);
     }
 
     return member;

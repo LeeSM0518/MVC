@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.Connection;
 
 @WebServlet("/member/update")
 public class MemberUpdateServlet extends HttpServlet {
@@ -19,11 +18,8 @@ public class MemberUpdateServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     ServletContext sc = this.getServletContext();
-    Connection conn = (Connection) sc.getAttribute("conn");
-
     try {
-      MemberDao memberDao = new MemberDao();
-      memberDao.setConnection(conn);
+      MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
       Member member = memberDao.selectOne(Integer.parseInt(req.getParameter("no")));
       req.setAttribute("updateMember", member);
 
@@ -40,16 +36,13 @@ public class MemberUpdateServlet extends HttpServlet {
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     ServletContext sc = this.getServletContext();
-    Connection conn = (Connection) sc.getAttribute("conn");
-
     try {
       Member member = new Member();
       member.setEmail(req.getParameter("email"))
           .setName(req.getParameter("name"))
           .setNo(Integer.parseInt(req.getParameter("no")));
 
-      MemberDao memberDao = new MemberDao();
-      memberDao.setConnection(conn);
+      MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
       memberDao.update(member);
 
       resp.sendRedirect("list");
@@ -60,4 +53,5 @@ public class MemberUpdateServlet extends HttpServlet {
       rd.forward(req, resp);
     }
   }
+
 }

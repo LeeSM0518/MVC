@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.Connection;
 
 @WebServlet("/member/add")
 public class MemberAddServlet extends HttpServlet {
@@ -26,11 +25,9 @@ public class MemberAddServlet extends HttpServlet {
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     ServletContext sc = this.getServletContext();
-    Connection connection = (Connection) sc.getAttribute("conn");
 
     try {
-      MemberDao memberDao = new MemberDao();
-      memberDao.setConnection(connection);
+      MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
 
       Member member = new Member()
           .setEmail(req.getParameter("email"))

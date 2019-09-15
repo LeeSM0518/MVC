@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.Connection;
 
 @WebServlet("/member/delete")
 public class MemberDeleteServlet extends HttpServlet {
@@ -18,11 +17,8 @@ public class MemberDeleteServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     ServletContext sc = this.getServletContext();
-    Connection conn = (Connection) sc.getAttribute("conn");
-
     try {
-      MemberDao memberDao = new MemberDao();
-      memberDao.setConnection(conn);
+      MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
       memberDao.delete(Integer.parseInt(req.getParameter("no")));
       resp.sendRedirect("list");
     } catch (Exception e) {
@@ -32,4 +28,5 @@ public class MemberDeleteServlet extends HttpServlet {
       rd.forward(req, resp);
     }
   }
+
 }

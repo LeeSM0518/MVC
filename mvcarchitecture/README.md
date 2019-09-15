@@ -2964,7 +2964,7 @@ URL을 만들 때 사용하는 태그이다. 이 태그를 사용하면 매개�
 
 - **DAO의 분리**
 
-  <img src="../../../../capture/스크린샷 2019-09-14 오후 3.54.18.png">
+  <img src="../capture/스크린샷 2019-09-14 오후 3.54.18.png">
 
   - DAO는 데이터베이스나 파일, 메모리 등을 이용하여 애플리케이션 데이터를 생성, 조회, 변경, 삭제하는 역할을 수행한다. 
   - 업무 로직에서 데이터 처리 부분을 분리하여 별도의 객체로 정의하면, 여러 업무에서 공통으로 사용할 수 있기 때문에 유지보수가 쉬워지고 재사용성이 높아진다.
@@ -3471,3 +3471,426 @@ MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 
      ```
 
 <br>
+
+# 5.11. ServletContextListener와 객체 공유
+
+웹 애플리케이션의 시작에서 종료까지 주요한 사건에 대해 알림 기능을 이용하기 위해서는 규칙에 따라 객체를 만들어 DD 파일(web.xml)에 등록하면 된다. 이렇게 **사건이 발생했을 때 알림을 받는 객체를 '리스너(Listener)'** 라고 부른다.
+
+<br>
+
+- **웹 애플리케이션의 상태 감시와 사건 인지**
+
+  <img src="../capture/스크린샷 2019-09-15 오후 2.31.12.png" width=500>
+
+<br>
+
+- **웹 애플리케이션의 주요 사건과 인터페이스**
+
+| 분류            | 사건                                   | 인터페이스                                       |
+| --------------- | -------------------------------------- | ------------------------------------------------ |
+| 웹 애플리케이션 | 시작 or 종료                           | javax.servlet.ServletContextListener             |
+| "               | ServletContext에 값을 추가, 제거, 대체 | javax.servlet.ServletContextAttributeListener    |
+| 세션            | 생성, 소멸                             | javax.servlet.http.HttpSessionListener           |
+| "               | 활성, 비활성                           | javax.servlet.http.HttpSessionActivationListener |
+| "               | HttpSession에 값을 추가,제거, 대체     | javax.servlet.http.HttpSessionAttributeListener  |
+| 요청            | 요청을 받고, 응답                      | javax.servlet.ServletRequestListener             |
+| "               | ServletRequest에 값을 추가, 제거, 대체 | javax.servlet.ServletRequestAttributeListener    |
+
+<br>
+
+예제를 살펴보면 **매번 DAO 인스턴스를 생성한다.** 이렇게 요청을 처리할 때마다 객체를 만들면 가비지(garbage)가 생성되고, 실행 시간이 길어진다.
+
+DAO의 경우처럼 여러 서블릿이 사용하는 객체는 서로 공유하는 것이 메모리 관리나 실행 속도 측면에서 좋다. 그래서 **DAO를 공유하려면 ServletContext에 저장하는 것이 좋다. ServletContext는 웹 애플리케이션이 종료될 때까지 유지되는 보관소이기 때문이다.**
+
+<br>
+
+- **ServletContext를 통해 DAO 공유**
+
+  웹 애플리케이션이 시작되거나 종료되는 사건이 발생하면, 이를 알리고자 서블릿 컨테이너는 리스너의 메서드를 호출한다. 바로 이 <u>리스너에서 DAO를 준비하면 된다.</u>
+
+<br>
+
+## 5.11.1. ServletContextListener의 활용
+
+웹 애플리케이션의 시작과 종료 사건을 담당할 리스너를 준비한다. AppInitServlet이 하던 일을 리스너로 옮긴다. 또한, MemberDao의 인스턴스 생성도 이 리스너에서 준비한다.
+
+- **리너의 구동 과정과 DAO 공유**
+
+  ```sequence
+  웹애플리케이션->서블릿컨테이너: 웹 애플리케이션 시작
+  서블릿컨테이너->ContextLoaderListener: (1)contextInitalized()
+  ContextLoaderListener->Connection: (2)생성
+  ContextLoaderListener->MemberDao: (3)생성
+  ContextLoaderListener->MemberDao: (4)setConnection(conn)
+  ContextLoaderListener->ServletContext: (5)setAttribute("memberDao", dao)
+  웹애플리케이션->서블릿컨테이너: 웹 애플리케이션 종료
+  서블릿컨테이너->ContextLoaderListener: contextDestroyed()
+  ```
+
+<br>
+
+## 5.11.2. 리스너 ServletContextListener 만들기
+
+웹 애플리케이션의 시작과 종료 이벤트를 처리할 리스너는 **ServletContextListener 인터페이스를** 구현해야 한다.
+
+- **ServletContextListener의 구현체**
+
+  <img src="../capture/스크린샷 2019-09-15 오후 5.44.31.png">
+
+  - **contextInitialized()** : 웹 애플리케이션이 시작될 때 호출된다. 공용 객체를 준비할 때 사용.
+  - **contextDestroyed()** : 웹 애플리케이션이 종료되기 전에 호출된다. 자원 해제를 할 때 사용.
+
+<br>
+
+- **src/listeners/ContextLoaderListener.java**
+
+  ```java
+  package spms.listeners;
+  
+  import spms.dao.MemberDao;
+  
+  import javax.servlet.ServletContext;
+  import javax.servlet.ServletContextEvent;
+  import javax.servlet.ServletContextListener;
+  import java.sql.Connection;
+  import java.sql.DriverManager;
+  
+  
+  @WebListener	// 리스너 배치
+  // ServletContextListener 구현
+  public class ContextLoaderListener implements ServletContextListener {
+  
+    Connection conn;
+  
+    // DB 커넥션 객체 준비 코드 추가
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+      try {
+        ServletContext sc = sce.getServletContext();
+  
+        Class.forName(sc.getInitParameter("driver"));
+        conn = DriverManager.getConnection(
+            sc.getInitParameter("url"),
+            sc.getInitParameter("username"),
+            sc.getInitParameter("password"));
+  
+        MemberDao memberDao = new MemberDao();
+        memberDao.setConnection(conn);
+  
+        // ServletContext에 보관
+        sc.setAttribute("memberDao", memberDao);
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+  
+    // 데이터베이스 연결을 끊음
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+      try {
+        conn.close();
+      } catch (Exception e) {}
+    }
+  
+  }
+  ```
+
+<br>
+
+## 5.11.3. 기존의 서블릿 변경하기
+
+직접 MemberDao 객체를 생성하는 대신, ServletContext에 저장된 DAO 객체를 꺼내 쓰는 것으로 변경한다.
+
+- **src/spms/MemberListServlet.java**
+
+  ```java
+  ...
+  public class MemberListServlet extends HttpServlet {
+  
+    private ServletContext sc;
+  
+    @Override
+    public void init() throws ServletException {
+      super.init();
+      sc = this.getServletContext();
+    }
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      // Connection을 생성하는 부분과 MemberDao를 생성하는 부분을 제거
+      try {
+        MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+  
+        req.setAttribute("members", memberDao.selectList());
+        resp.setContentType("text/html; charset=UTF-8");
+  
+        RequestDispatcher rd = req.getRequestDispatcher(
+            "/member/MemberList.jsp");
+        rd.include(req, resp);
+  
+      } catch (Exception e) {
+        e.printStackTrace();
+        req.setAttribute("error", e);
+        RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+        rd.forward(req, resp);
+      }
+    }
+  
+  }
+  ```
+
+- **src/spms/serlbets/AppInitServlet을 제거**
+
+<br>
+
+# 실력 향상 과제
+
+**MemberListServlet에 적용해 봤으니, 나머지 서블릿도 적용하세요.**
+
+1. MemberAddServlet 클래스 변경 **(src/servlets/MemberAddServlet.java)**
+
+   ```java
+   ...
+   @Override
+   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+     ServletContext sc = this.getServletContext();
+   
+     try {
+       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+   
+       Member member = new Member()
+         .setEmail(req.getParameter("email"))
+         .setPassword(req.getParameter("password"))
+         .setName(req.getParameter("name"));
+   
+       memberDao.insert(member);
+       resp.sendRedirect("list");
+     } catch (Exception e) {
+       req.setAttribute("error", e);
+       RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+       rd.forward(req, resp);
+     }
+   }
+   ...
+   ```
+
+2. MemberUpdateServelt 클래스 변경 **(src/servlets/MemberUpdateServlet.java)**
+
+   ```java
+   ...
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+     ServletContext sc = this.getServletContext();
+     try {
+       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+       Member member = memberDao.selectOne(Integer.parseInt(req.getParameter("no")));
+       req.setAttribute("updateMember", member);
+   
+       RequestDispatcher rd = req.getRequestDispatcher("/member/MemberUpdate.jsp");
+       rd.forward(req, resp);
+     } catch (Exception e) {
+       e.printStackTrace();
+       req.setAttribute("error", e);
+       RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+       rd.forward(req, resp);
+     }
+   }
+   
+   @Override
+   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+     ServletContext sc = this.getServletContext();
+     try {
+       Member member = new Member();
+       member.setEmail(req.getParameter("email"))
+         .setName(req.getParameter("name"))
+         .setNo(Integer.parseInt(req.getParameter("no")));
+   
+       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+       memberDao.update(member);
+   
+       resp.sendRedirect("list");
+     } catch (Exception e) {
+       e.printStackTrace();
+       req.setAttribute("error", e);
+       RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+       rd.forward(req, resp);
+     }
+   }
+   ...
+   ```
+
+3. MemberDeleteServlet 클래스 변경
+
+   ```java
+   ...
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+     ServletContext sc = this.getServletContext();
+     try {
+       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+       memberDao.delete(Integer.parseInt(req.getParameter("no")));
+       resp.sendRedirect("list");
+     } catch (Exception e) {
+       req.setAttribute("error", e);
+       e.printStackTrace();
+       RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+       rd.forward(req, resp);
+     }
+   }
+   ...
+   ```
+
+4. LogInServlet 클래스 변경
+
+   ```java
+   ...
+   @Override
+   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+     ServletContext sc = this.getServletContext();
+   
+     try {
+       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+       Member member = memberDao.exist(req.getParameter("email"), req.getParameter("password"));
+       if (member != null) {
+         HttpSession session = req.getSession();
+         session.setAttribute("member", member);
+         resp.sendRedirect("../member/list");
+       } else {
+         RequestDispatcher rd = req.getRequestDispatcher("/auth/LogInFail.jsp");
+         rd.forward(req, resp);
+       }
+     } catch (Exception e) {
+       req.setAttribute("error", e);
+       RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+       rd.forward(req, resp);
+     }
+   }
+   ...
+   ```
+
+<br>
+
+# 5.12. DB 커넥션풀
+
+**DB 커넥션 객체를 여러 개 생성하여 풀(Pool)에 담아 놓고 필요할 때 꺼내 쓰는 방식이다.** 즉, 자주 쓰는 객체를 미리 만들어 두고, 필요할 때마다 빌리고, 사용한 다음 반납하는 방식을 **'풀링(pooling)'** 이라 한다. 이렇게 객체를 모아둔 것을 **'객체 풀(object pool)'** 이라 하고, 여러 개의 DB 커넥션을 관리하는 객체를 **'DB 커넥션풀'** 이라 한다.
+
+- **싱글 커넥션 사용의 문제점**
+
+  <img src="../capture/스크린샷 2019-09-15 오후 6.58.10.png">
+
+  - '롤백(rollback)' 이 한 곳에서 발생하게 되면 모든 Statement는 같은 커넥션에서 생성한 객체이므로 그 커넥션을 통해 이루어진 모든 작업들도 롤백이 된다. 따라서 **웹 브라우저의 요청을 처리할 때, 각 요청에 대해 개별 DB 커넥션을 가용해야 한다.**
+  - 커넥션을 맺을 때마다 데이터베이스 서버는 사용자 인증과 권한 검사를 수행하고 요청 처리를 위한 준비 작업을 해야 한다. 이런 문제를 해결하기 위해 등장한 것이 **DB 커넥션 풀이다.**
+
+<br>
+
+## 5.12.1. DB 커넥션풀
+
+<img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile23.uf.tistory.com%2Fimage%2F215D3A33591A5EAF109B08">
+
+<br>
+
+# 5.12.2. DB 커넥션풀 만들기
+
+- **src/spms/util/DBConnectionPool.java**
+
+  ```java
+  package spms.util;
+  
+  import java.sql.Connection;
+  import java.sql.DriverManager;
+  import java.util.ArrayList;
+  
+  public class DBConnectionPool {
+  
+    private String url;
+    private String username;
+    private String password;
+    // Connection 객체를 보관할 ArrayList
+    private ArrayList<Connection> connList = new ArrayList<>();
+  
+    // DB 커넥션 생성에 필요한 값을 매개변수로 받음
+    public DBConnectionPool(String driver, String url,
+                            String username, String password) throws Exception {
+      this.url = url;
+      this.username = username;
+      this.password = password;
+  
+      Class.forName(driver);
+    }
+  
+    public Connection getConnection() throws Exception {
+      if (connList.size() > 0) {
+        Connection conn = connList.get(0);
+        // DB 커넥션 객체도 일정 시간이 지나면 서버와의 연결이 끊어지기 때문에 유효성 체크 후 반환
+        if (conn.isValid(10)) {
+          return conn;
+        }
+      }
+      // ArrayList에 보관된 객체가 없다면, DriverManager를 통해 새로 만들어 반환
+      return DriverManager.getConnection(url, username, password);
+    }
+  
+    // 커넥션 객체를 쓰고 난 다음에 커넥션 풀에 반환
+    public void returnConnection(Connection conn) throws Exception {
+      connList.add(conn);
+    }
+  
+    // 웹 애플리케이션이 종료하기 전에 이 메서드를 호출하여 데이터베이스와 연결된 것을 모두 끊는다.
+    public void closeAll() {
+      for (Connection conn : connList) {
+        try {conn.close();} catch (Exception ignored){}
+      }
+    }
+  
+  }
+  ```
+
+<br>
+
+## 5.12.3. MemberDAO에 DB 커넥션풀 적용하기
+
+- **src/spms/dao/MemberDao.java**
+
+  ```java
+  ...
+  public class MemberDao {
+  
+    // DB 커넥션 풀 필드로 정의
+    private DBConnectionPool connPool;
+  
+    // 셋터 메소드 추가
+    public void setDbConnectionPool(DBConnectionPool connPool) {
+      this.connPool = connPool;
+    }
+    
+    // 모든 메소드들에 다음과 같이 적요
+    public List<Member> selectList() throws Exception {
+      String query = "select mno, mname, email, cre_date" +
+          " from members" +
+          " order by mno";
+      
+      // 커넥션 객체를 DB 커넥션 풀로 부터 커넥션을 가져온다.
+      Connection conn = connPool.getConnection();
+  
+      try (PreparedStatement ps = conn.prepareStatement(query);
+           ResultSet rs = ps.executeQuery()) {
+        ArrayList<Member> members = new ArrayList<>();
+  
+        while (rs.next()) {
+          members.add(new Member()
+              .setNo(rs.getInt("mno"))
+              .setName(rs.getString("mname"))
+              .setEmail(rs.getString("email"))
+              .setCreateDate(rs.getDate("cre_date")));
+        }
+        return members;
+      } finally {
+        // 마지막에 커넥션을 다시 반환해준다.
+        if (conn != null) connPool.returnConnection(conn);
+      }
+    }
+    ...
+  ```
+
+<br>
+
