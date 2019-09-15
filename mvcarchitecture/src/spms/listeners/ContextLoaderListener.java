@@ -1,18 +1,16 @@
 package spms.listeners;
 
 import spms.dao.MemberDao;
-
+import spms.util.DBConnectionPool;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
-import java.sql.Connection;
-import java.sql.DriverManager;
 
 @WebListener
 public class ContextLoaderListener implements ServletContextListener {
 
-  Connection conn;
+  private DBConnectionPool connPool;
 
   @Override
   public void contextInitialized(ServletContextEvent sce) {
@@ -21,13 +19,14 @@ public class ContextLoaderListener implements ServletContextListener {
       sc.setRequestCharacterEncoding("UTF-8");
 
       Class.forName(sc.getInitParameter("driver"));
-      conn = DriverManager.getConnection(
+      connPool = new DBConnectionPool(
+          sc.getInitParameter("driver"),
           sc.getInitParameter("url"),
           sc.getInitParameter("username"),
           sc.getInitParameter("password"));
 
       MemberDao memberDao = new MemberDao();
-      memberDao.setConnection(conn);
+      memberDao.setDbConnectionPool(connPool);
 
       sc.setAttribute("memberDao", memberDao);
     } catch (Throwable e) {
@@ -37,9 +36,7 @@ public class ContextLoaderListener implements ServletContextListener {
 
   @Override
   public void contextDestroyed(ServletContextEvent sce) {
-    try {
-      conn.close();
-    } catch (Exception e) {}
+    connPool.closeAll();
   }
 
 }

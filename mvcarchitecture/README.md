@@ -3894,3 +3894,81 @@ DAO의 경우처럼 여러 서블릿이 사용하는 객체는 서로 공유하�
 
 <br>
 
+## 5.12.4. ContextLoaderListener에서 DBConnectionPool 생성 및 DAO에 주입
+
+- **src/spms/listeners/ContextLoaderListener.java**
+
+  ```java
+  package spms.listeners;
+  
+  import spms.dao.MemberDao;
+  import spms.util.DBConnectionPool;
+  import javax.servlet.ServletContext;
+  import javax.servlet.ServletContextEvent;
+  import javax.servlet.ServletContextListener;
+  import javax.servlet.annotation.WebListener;
+  
+  @WebListener
+  public class ContextLoaderListener implements ServletContextListener {
+    
+    // DBConnectionPool 객체 추가
+    private DBConnectionPool connPool;
+  
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+      try {
+        ServletContext sc = sce.getServletContext();
+        sc.setRequestCharacterEncoding("UTF-8");
+  
+        Class.forName(sc.getInitParameter("driver"));
+        // DBConnectionPool 객체 생성
+        connPool = new DBConnectionPool(
+            sc.getInitParameter("driver"),
+            sc.getInitParameter("url"),
+            sc.getInitParameter("username"),
+            sc.getInitParameter("password"));
+  
+        // MemberDao 객체를 생성 및 커넥션풀 객체 주입
+        MemberDao memberDao = new MemberDao();
+        memberDao.setDbConnectionPool(connPool);
+  
+        sc.setAttribute("memberDao", memberDao);
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+  
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+      // 웹 애플리케이션이 종료되면 모든 커넥션 객체 종료
+      connPool.closeAll();
+    }
+  
+  }
+  ```
+
+<br>
+
+# 5.13. DataSource 와 JNDI
+
+DataSource는 JDBC 확장 API를 정의한 javax.sql 패키지에 있다. Java EE 서버(톰켓 서버)에서 DB 커넥션 풀을 관리하는 방법을 알아보자. JNDI API를 사용하여 Java EE 서버 자원에 접근하는 방법도 배우자.
+
+<br>
+
+## 5.13.1. javax.sql 확장 패키지
+
+javax.sql 패키지가 제공하는 주요 기능
+
+- **DriverManager를 대체할 수 있는 DataSource 인터페이스 제공**
+- **Connection 및 Statement 객체의 풀링**
+- **분산 트랜잭션 처리**
+- **Rowsets의 지원**
+
+<br>
+
+## 5.13.2. DataSource
+
+**DataSource는** DriverManager를 통해 DB 커넥션을 얻는 것보다 더 좋은 기법을 제공한다.
+
+1. DataSource는 서버에서 관리하기 때문에 데이터베이스나 JDBC 드라이버가 변경되더라도 **애플리케이션을 바꿀 필요가 없다.**
+
