@@ -1,16 +1,19 @@
 package spms.listeners;
 
+import org.apache.commons.dbcp2.BasicDataSource;
 import spms.dao.MemberDao;
 import spms.util.DBConnectionPool;
+
+import javax.naming.InitialContext;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
+import javax.sql.DataSource;
+import java.sql.SQLException;
 
 @WebListener
 public class ContextLoaderListener implements ServletContextListener {
-
-  private DBConnectionPool connPool;
 
   @Override
   public void contextInitialized(ServletContextEvent sce) {
@@ -18,15 +21,17 @@ public class ContextLoaderListener implements ServletContextListener {
       ServletContext sc = sce.getServletContext();
       sc.setRequestCharacterEncoding("UTF-8");
 
-      Class.forName(sc.getInitParameter("driver"));
-      connPool = new DBConnectionPool(
-          sc.getInitParameter("driver"),
-          sc.getInitParameter("url"),
-          sc.getInitParameter("username"),
-          sc.getInitParameter("password"));
+      InitialContext initialContext = new InitialContext();
+      DataSource ds = (DataSource)initialContext.lookup("java:comp/env/jdbc/postgresql");
+
+//      ds = new BasicDataSource();
+//      ds.setDriverClassName(sc.getInitParameter("driver"));
+//      ds.setUrl(sc.getInitParameter("url"));
+//      ds.setUsername(sc.getInitParameter("username"));
+//      ds.setPassword(sc.getInitParameter("password"));
 
       MemberDao memberDao = new MemberDao();
-      memberDao.setDbConnectionPool(connPool);
+      memberDao.setDataSource(ds);
 
       sc.setAttribute("memberDao", memberDao);
     } catch (Throwable e) {
@@ -35,8 +40,6 @@ public class ContextLoaderListener implements ServletContextListener {
   }
 
   @Override
-  public void contextDestroyed(ServletContextEvent sce) {
-    connPool.closeAll();
-  }
+  public void contextDestroyed(ServletContextEvent sce) {}
 
 }

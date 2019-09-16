@@ -1298,21 +1298,7 @@ HttpSession 객체는 클라이언트 당 한 개가 생성된다. 로그인되�
 
 - **로그인 시나리오**
 
-  ```mermaid
-  sequenceDiagram
-  웹브라우저->>LoginServlet: (1) GET 요청
-  LoginServlet->>LoginForm.jsp: (2) 포워딩
-  LoginForm.jsp-->>웹브라우저: (3) 응답
-  웹브라우저->>LoginServlet: (4) POST 요청
-  alt (5)성공
-  LoginServlet->>Member: 생성
-  LoginServlet->>HttpSession: 저장
-  LoginServlet-->>웹브라우저: (6) 리다이렉트
-  else (5)실패
-  LoginServlet->>LoginForm.jsp: 실패
-  LoginForm.jsp-->>웹브라우저: (6) 리프래시(/auth/login)
-  end
-  ```
+  <img src="../capture/스크린샷 2019-09-16 오후 5.13.21.png">
 
   1. 웹 브라우저에서 '/auth/login' 서블릿을 요청
   2. LoginServlet은 LoginForm.jsp로 화면 출력 작업 위임
@@ -1509,19 +1495,7 @@ LogInServlet에서 HttpSession 보관소에 저장한 Member 객체를 Header.js
 
 - **HttpSession 객체로부터 Member 얻기 시나리오**
 
-  ```sequence
-  웹브라우저->MemberListServlet: (1) GET 요청
-  MemberListServlet->MemberList.jsp: (2) 인클루딩
-  MemberList.jsp->Header.jsp: (3) 인클루딩
-  Header.jsp->HttpSession: (4) Member 객체 꺼내기
-  HttpSession-->Header.jsp: Member 객체 반환
-  Header.jsp->Member: (5) getName()
-  Header.jsp-->MemberList.jsp: 반환
-  MemberList.jsp->Tail.jsp: (6) 인클루딩
-  Tail.jsp-->MemberList.jsp: 반환
-  MemberList.jsp-->MemberListServlet: 반환
-  MemberListServlet-->웹브라우저: (7) 응답
-  ```
+  <img src="../capture/스크린샷 2019-09-16 오후 5.14.18.png">
 
   1. 로그인을 성공하면, 서버로부터 리다이렉트 응답을 받는다.
   2. MemberListServlet은 데이터베이스에서 회원 목록을 가져온 후, MemberList.jsp에 화면 출력 작업을 위임
@@ -1583,16 +1557,7 @@ LogInServlet에서 HttpSession 보관소에 저장한 Member 객체를 Header.js
 
 - **로그아웃 시나리오**
 
-```sequence
-웹브라우저->LogOutServlet: (1) 로그아웃 요청
-LogOutServlet->HttpSession: (2) invalidate()
-LogOutServlet-->웹브라우저: (3) 리다이렉트(/auth/login)
-웹브라우저->MemberListServlet: (4) 회원 목록 요청
-MemberListServlet->MemberList.jsp: (5) 인클루딩
-MemberList.jsp->Header.jsp: (6) 인클루딩
-Header.jsp->HttpSession: (7) Member 객체 꺼내기
-HttpSession-->Header.jsp: null 반환
-```
+<img src="../capture/스크린샷 2019-09-16 오후 5.15.11.png">
 
 1. '로그아웃' 링크를 클릭하면, 웹 브라우저는 LogOutServlet 을 요청
 2. LogOutServlet은 HttpSession 객체를 없애기 위해 invalidate() 호출
@@ -2979,18 +2944,7 @@ MemberListServlet에서 데이터 처리 로직을 분리하여 MemberDao를 정
 
 - **DAO가 적용된 후의 회원 목록 조회 시나리오**
 
-  ```sequence
-  웹브라우저->MemberListServlet: (1)요청
-  MemberListServlet->MemberDao: (2)selectList()
-  MemberDao->Database: (3)SELECT
-  Database-->MemberDao: 결과
-  MemberDao->Member: (4)목록생성
-  MemberDao-->MemberListServlet: List<Member>
-  MemberListServlet->MemberList.jsp: (5)인클루딩
-  MemberList.jsp->Member: (6)참조
-  MemberList.jsp-->MemberListServlet: 회원 목록 화면
-  MemberListServlet-->웹브라우저: (7)응답
-  ```
+  <img src="../capture/스크린샷 2019-09-16 오후 5.22.44.png">
 
 <br>
 
@@ -3516,16 +3470,7 @@ DAO의 경우처럼 여러 서블릿이 사용하는 객체는 서로 공유하�
 
 - **리너의 구동 과정과 DAO 공유**
 
-  ```sequence
-  웹애플리케이션->서블릿컨테이너: 웹 애플리케이션 시작
-  서블릿컨테이너->ContextLoaderListener: (1)contextInitalized()
-  ContextLoaderListener->Connection: (2)생성
-  ContextLoaderListener->MemberDao: (3)생성
-  ContextLoaderListener->MemberDao: (4)setConnection(conn)
-  ContextLoaderListener->ServletContext: (5)setAttribute("memberDao", dao)
-  웹애플리케이션->서블릿컨테이너: 웹 애플리케이션 종료
-  서블릿컨테이너->ContextLoaderListener: contextDestroyed()
-  ```
+  <img src="../capture/스크린샷 2019-09-16 오후 5.23.15.png">
 
 <br>
 
@@ -3971,4 +3916,395 @@ javax.sql 패키지가 제공하는 주요 기능
 **DataSource는** DriverManager를 통해 DB 커넥션을 얻는 것보다 더 좋은 기법을 제공한다.
 
 1. DataSource는 서버에서 관리하기 때문에 데이터베이스나 JDBC 드라이버가 변경되더라도 **애플리케이션을 바꿀 필요가 없다.**
+
+   - **DriverManager의 사용**
+
+     <img src="../capture/스크린샷 2019-09-16 오전 11.10.20.png">
+
+     > 데이터베이스의 주소가 바뀐다거나 JDBC 드라이버가 변경될 경우 웹 애플리케이션의 코드도 변경해야 한다.
+
+   - **DataSource의 사용**
+
+     <img src="../capture/스크린샷 2019-09-16 오전 11.11.39.png">
+
+     > DataSource는 서버에서 관리하므로 변경사항이 생겨도 애플리케이션은 코드를 바꿀 필요가 없다.
+
+<br>
+
+2. DataSource를 사용하면 **Connection과 Statement 객체를 풀링할 수 있으며, 분산 트랜잭션을 다룰 수 있다.**
+
+   - **DriverManager와 커네셕풀**
+
+     <img src="../capture/스크린샷 2019-09-16 오전 11.19.16.png">
+
+     > 애플리케이션 개발자가 커넥션풀을 별도로 준비해야 되는 번거로움이 있다.
+
+   - **DriverManager의 사용**
+
+     <img src="../capture/스크린샷 2019-09-16 오전 11.23.50.png">
+
+     > DataSource는 자체적으로 커넥션풀 기능을 구현하기 때문에 웹 애플리케이션 쪽에서 따로 작업할 것이 없어 매우 편리하다.
+
+<br>
+
+## 5.13.3. DataSource의 적용
+
+MemberDao에 DBConnectionPoll 대신 DataSource를 적용해 보자.
+
+<br>
+
+### DataSource 구현체 준비
+
+DataSource를 사용하려면 javax.sql 패키지의 구현체가 필요하다.
+
+- **commons-dbcp2-2.7.0.jar 와 commons-pool2-2.7.0.jar 파일을 lib에 추가**
+
+<br>
+
+### ContextLoaderListener 클래스 변경
+
+- **src/spms/listeners/ContextLoaderListener.java**
+
+  ```java
+  ...
+  @WebListener
+  public class ContextLoaderListener implements ServletContextListener {
+  
+    // DBCP 라이브러리에서 DataSource 인터페이스를 구현한 클래스 BaseDataSource 인스턴스 변수 선언
+    private BasicDataSource ds;
+  
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+      try {
+        ServletContext sc = sce.getServletContext();
+        sc.setRequestCharacterEncoding("UTF-8");
+  
+        // BasicDataSource 객체 생성
+        ds = new BasicDataSource();
+        ds.setDriverClassName(sc.getInitParameter("driver"));
+        ds.setUrl(sc.getInitParameter("url"));
+        ds.setUsername(sc.getInitParameter("username"));
+        ds.setPassword(sc.getInitParameter("password"));
+  
+        MemberDao memberDao = new MemberDao();
+        // MemberDao에 DataSource 주입
+        memberDao.setDataSource(ds);
+  
+        sc.setAttribute("memberDao", memberDao);
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+  
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+      try { if (ds != null) ds.close();} catch (SQLException ignored) {}
+    }
+  
+  }
+  ```
+
+<br>
+
+### MemberDao에 DataSource 적용
+
+- **src/spms/dao/MemberDao.java**
+
+  ```java
+  ...
+  public class MemberDao {
+  
+    // DataSource를 위한 인스턴스 변수와 셋터 메서드 추가
+    private DataSource ds;
+  
+    public void setDataSource(DataSource ds) {
+      this.ds = ds;
+    }
+    ...
+  ```
+
+<br>
+
+### 메서드에서 DataSource 사용
+
+- **src/spms/dao/MemberDao.java** 
+
+  DBConnectionPool에서 커넥션 객체를 꺼내는 대신, DataSource로부터 커넥션 객체를 꺼낸다.
+
+  ```java
+  ...
+  	public List<Member> selectList() throws Exception {
+      String query = "select mno, mname, email, cre_date" +
+          " from members" +
+          " order by mno";
+      try (Connection conn = ds.getConnection();
+           PreparedStatement ps = conn.prepareStatement(query);
+           ResultSet rs = ps.executeQuery()) {
+        ArrayList<Member> members = new ArrayList<>();
+  
+        while (rs.next()) {
+          members.add(new Member()
+              .setNo(rs.getInt("mno"))
+              .setName(rs.getString("mname"))
+              .setEmail(rs.getString("email"))
+              .setCreateDate(rs.getDate("cre_date")));
+        }
+        return members;
+      }
+    }
+  
+    public int insert(Member member) throws Exception {
+      int success;
+      String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
+          " (?, ?, ?, now(), now())";
+  
+      try (Connection connection = ds.getConnection();
+           PreparedStatement ps = connection.prepareStatement(query)) {
+        ps.setString(1, member.getEmail());
+        ps.setString(2, member.getPassword());
+        ps.setString(3, member.getName());
+        success = ps.executeUpdate();
+      }
+  
+      return success;
+    }
+  
+    public int delete(int no) throws Exception {
+      int success;
+      String query = "delete from members where mno=?";
+  
+      try (Connection connection = ds.getConnection();
+           PreparedStatement ps = connection.prepareStatement(query)) {
+        ps.setInt(1, no);
+        success = ps.executeUpdate();
+      }
+  
+      return success;
+    }
+  
+    public Member selectOne(int no) throws Exception {
+      Member member;
+      String query = "select mno, email, mname, cre_date from members" +
+          " where mno=" + no;
+  
+  //    Connection connection = connPool.getConnection();
+  
+      try (Connection connection = ds.getConnection();
+           PreparedStatement ps = connection.prepareStatement(query);
+           ResultSet rs = ps.executeQuery()) {
+        rs.next();
+        member = new Member()
+            .setNo(no)
+            .setEmail(rs.getString("email"))
+            .setName(rs.getString("mname"))
+            .setCreateDate(rs.getDate("cre_date"));
+      }
+      return member;
+    }
+  
+    public int update(Member member) throws Exception {
+      int success = 0;
+      String query = "update members set email=?, mname=?, mod_date=now() where mno=?";
+  
+  //    Connection connection = connPool.getConnection();
+  
+      try (Connection connection = ds.getConnection();
+          PreparedStatement ps = connection.prepareStatement(query)) {
+        ps.setString(1, member.getEmail());
+        ps.setString(2, member.getName());
+        ps.setInt(3, member.getNo());
+        success = ps.executeUpdate();
+      } catch (SQLException e) {
+        System.out.println(e.getSQLState());
+        System.out.println(e.getMessage());
+      }
+  
+      return success;
+    }
+  
+    public Member exist(String email, String password) throws Exception {
+      Member member = null;
+      String query = "select mno, mname, cre_date, mod_date from members" +
+          " where email=? and pwd=?";
+  
+  //    Connection connection = connPool.getConnection();
+      Connection connection = ds.getConnection();
+  
+      try (PreparedStatement ps = connection.prepareStatement(query)) {
+        ps.setString(1, email);
+        ps.setString(2, password);
+        ResultSet rs = ps.executeQuery();
+  
+        if (rs.next()) {
+          member = new Member()
+              .setName(rs.getString("mname"))
+              .setEmail(email)
+              .setNo(rs.getInt("mno"))
+              .setCreateDate(rs.getDate("cre_date"))
+              .setModifiedDate(rs.getDate("mod_date"))
+              .setPassword(password);
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+  
+      return member;
+    }
+  
+  }
+  ```
+
+<br>
+
+### DataSource의 Connection
+
+DataSource가 만들어 주는 Connection 객체는 DriverManager가 만들어주는 커넥션 객체를 한번 더 포장한 것이다.
+
+- **DataSource의 Connection 객체**
+
+  <img src="../capture/스크린샷 2019-09-16 오후 4.17.54.png">
+
+  - DataSource는 커넥션 대행 객체(Proxy Object)를 리턴한다. 위의 그림에서는 **PoolableConnection 커넥션 대행 객체를** 반환한다. 이 대행 객체에는 진짜 커넥션을 가리키는 참조 변수(\_conn)와 커넥션풀을 가리키는 참조 변수(\_pool)가 들어 있다.
+  - 따라서, DataSource가 만들어 준 커넥션 대행 객체에 대해 close()를 호출하면, **커넥션 대행 객체는 진짜 커넥션 객체를 커넥션 풀에 반납한다.**
+
+<br>
+
+## 5.13.4. 서버에서 제공하는 DataSource 사용하기
+
+### 톰갯 서버에 DataSource 설정하기
+
+톰캣 실행 환경에서 DataSource를 설정해 보자. 
+
+- **/usr/local/Cellar/tomcat/9.0.22/libexec/conf/context.xml**
+
+  ```xml
+  <Context>
+    <!-- Default set of monitored resources. If one of these changes, the    -->
+    <!-- web application will be reloaded.                                   -->
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+    <WatchedResource>WEB-INF/tomcat-web.xml</WatchedResource>
+    <WatchedResource>${catalina.base}/conf/web.xml</WatchedResource>
+    <Resource name="jdbc/postgresql" auth="Container" type="javax.sql.DataSource"
+              maxActive="10" maxIdle="3" maxWait="10000"
+              username="fsmfppcj"
+              password="opXwqwWLpezpFQHX6OWFl3mQW1xf0VqH"
+              driverClassName="org.postgresql.Driver"
+              url="jdbc:postgresql://arjuna.db.elephantsql.com:5432/"
+              closeMethod="close"/>
+  
+    <!-- Uncomment this to disable session persistence across Tomcat restarts -->
+    <!--
+      <Manager pathname="" />
+      -->
+  </Context>
+  ```
+
+  - \<Context> 태그 안에 \<Resource> 태그를 추가한다.
+
+<br>
+
+**\<Resource> 태그의 속성들**
+
+| 속성명          | 설명                                                         |
+| --------------- | ------------------------------------------------------------ |
+| name            | JNDL 이름. Context의 lookup()를 사용하여 자원을 찾을 때 사용. |
+| auth            | 자원 관리의 주체를 지정한다.설정 가능한 값으로 Application 또는 Container가 가능하다. |
+| type            | 자원의 타입을 지정한다. 패키지 이름을 포함한 클래스 이름     |
+| driverClassName | JDBC 드라이버 클래스의 이름. 패키지 이름을 포함              |
+| url             | 데이터베이스 커넥션 URL                                      |
+| username        | 데이터베이스 사용자 이름                                     |
+| password        | 데이터베이스 사용자의 암호                                   |
+| maxActive       | DataSource로부터 꺼낼 수 있는 커넥션의 최대 개수. 기본값 8개 |
+| maxIdle         | DataSource에서 유지할 수 있는 사용되지 않는 커넥션의 최대 개수. |
+| maxWait         | 또다시 커넥션을 달라는 요청이 들어 왔을 때, 커넥션을 준비하기 위해 기다리는 최대 밀리초 |
+| closeMethod     | 톰캣 서버가 종료될 때, 자원을 해제하기 위해 호출하는 메서드의 이름 |
+
+<br>
+
+### 웹 애플리케이션에서 톰캣 서버의 자원 사용
+
+톰캣 서버에 설정한 DataSource를 웹 애플리케이션에서 사용하려면 DD 파일(web.xml)에 서버 자원을 참조한다는 선언을 해야 한다.
+
+- **web/WEB-INF/web.xml**
+
+  ```xml
+  ...
+  <resource-ref>
+    <res-ref-name>jdbc/postgresql</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+  
+  <welcome-file-list>
+    <welcome-file>auth.LogInForm.jsp</welcome-file>
+  </welcome-file-list>
+  ...
+  ```
+
+  - \<web-app> 태그 안에 \<resource-ref> 태그를 작성한다.
+
+    ```xml
+    <resource-ref>
+      <res-ref-name>JNDI 이름</res-ref-name>
+      <res-type>리턴될 자원의 클래스 이름(패키지명 포함)</res-type>
+      <res-auth>자원 관리의 주체</res-auth>
+    </resource-ref>
+    ```
+
+    - **\<res-ref-name>** : context.xml에 선언한 자원의 이름
+    - **\<res-type>** : 톰캣 서버에서 리턴하는 자원의 타입
+    - **\<res-auth>** : 톰캣 서버가 리턴하는 자원의 관리 주체
+
+<br>
+
+**JNDI란 무엇인가?**
+
+JNDI란 **Java Naming Directory Interface API의 머리글자이다.** 디렉터리 서비스에 접근하는데 필요한 API이며 애플리케이션은 이 API를 사용하여 서버의 자원을 찾을 수 있다.
+
+<br>
+
+### ContextLoaderListener 클래스 변경
+
+- **src/spms/listeners/ContextLoaderListener.java**
+
+  ```java
+  ...
+  @WebListener
+  public class ContextLoaderListener implements ServletContextListener {
+  
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+      try {
+        ServletContext sc = sce.getServletContext();
+        sc.setRequestCharacterEncoding("UTF-8");
+  
+        // 톰캣 서버에서 자원을 찾기 위해 InitialContext 객체를 생성
+        InitialContext initialContext = new InitialContext();
+        // lookup() 메서드를 이용해, JNDI 이름으로 등록된 서버 자원을 가져옴
+        DataSource ds = (DataSource)initialContext.lookup("java:comp/env/jdbc/postgresql");
+  
+  //      ds = new BasicDataSource();
+  //      ds.setDriverClassName(sc.getInitParameter("driver"));
+  //      ds.setUrl(sc.getInitParameter("url"));
+  //      ds.setUsername(sc.getInitParameter("username"));
+  //      ds.setPassword(sc.getInitParameter("password"));
+  
+        MemberDao memberDao = new MemberDao();
+        memberDao.setDataSource(ds);
+  
+        sc.setAttribute("memberDao", memberDao);
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+  
+    // 톰캣 서버가 종료될 때, 서버 자원에 대해 close()가 호출되도록 설정해놨기 때문에 따로 자원
+    // 해제를 해줄 필요가 없다.
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {}
+  
+  }
+  ```
+
+<br>
 
