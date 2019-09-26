@@ -514,5 +514,241 @@ throw new ServletException(e);
 
 <br>
 
+# 실력 향상 과제
 
+1. **spms.servlets.MemberUpdateServlet을 페이지 컨트롤러로 변경하세요.**
+
+   ```java
+   @WebServlet("/member/update")
+   public class MemberUpdateServlet extends HttpServlet {
+   
+     @Override
+     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       ServletContext sc = this.getServletContext();
+       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+       try {
+         // 프런트 컨트롤러가 저장한 VO 객체를 이용
+         req.setAttribute("member", memberDao.selectOne(
+           Integer.parseInt(req.getParameter("no"))));
+         // 프런트 컨트롤러에게 뷰 정보를 전달
+         req.setAttribute("viewUrl", "/member/MemberUpdate.jsp");
+       } catch (Exception e) {
+         throw new ServletException(e);
+       }
+     }
+   
+     @Override
+     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       ServletContext sc = this.getServletContext();
+       try {
+         Member member = (Member) req.getAttribute("member");
+         MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+         memberDao.update(member);
+   
+         // 프런트 컨트롤러에게 list로 리다이렉트 요청 url 전달
+         req.setAttribute("viewUrl", "redirect:list.do");
+       } catch (Exception e) {
+         throw new ServletException(e);
+       }
+     }
+   
+   }
+   ```
+
+   <br>
+
+2. **Member/MemberUpdate.jsp 페이지에 있는 링크 또는 폼의 URL에 .do를 붙이세요.**
+
+   ```jsp
+   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+   <html>
+   <head>
+       <title>회원정보</title>
+   </head>
+   <body>
+   <h1>회원정보</h1>
+   <%-- URL에 .do 붙이기--%>
+   <form action="update.do" method="post">
+       번호: <input type="text" name="no" value="${member.no}" readonly><br>
+       이름: <input type="text" name="name" value="${member.name}"><br>
+       이메일: <input type="text" name="email" value="${member.email}"><br>
+       가입일: ${member.createDate}<br>
+       <input type="submit" value="저장">
+       <%-- URL에 .do 붙이기 --%>
+       <input type="button" value="삭제" onclick="location.href='delete.do?no=${member.no}'">
+       <input type="button" value="취소" onclick="location.href='list.do'">
+   </form>
+   </body>
+   </html>
+   ```
+
+   <br>
+
+3. **spms.servlets.MemberDeleteServlet을 페이지 컨트롤러로 변경하세요.**
+
+   ```java
+   @WebServlet("/member/delete")
+   public class MemberDeleteServlet extends HttpServlet {
+   
+     @Override
+     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       ServletContext sc = this.getServletContext();
+       try {
+         MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+         // 프론트 컨트롤러가 저장한 "no"을 불러온다.
+         memberDao.delete(Integer.parseInt(req.getParameter("no")));
+         // list 로 리다이렉트 요청 URL 저장
+         req.setAttribute("viewUrl", "redirect:list.do");
+       } catch (Exception e) {
+         throw new ServletException(e);
+       }
+     }
+   
+   }
+   ```
+
+   <br>
+
+4. **spms.servlets.LogInServlet을 페이지 컨트롤러로 변경하세요.**
+
+   ```java
+   @WebServlet("/auth/login")
+   public class LogInServlet extends HttpServlet {
+   
+     @Override
+     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       // 로그인 URL 저장
+       req.setAttribute("viewUrl", "/auth/LogInForm.jsp");
+     }
+   
+     @Override
+     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       ServletContext sc = this.getServletContext();
+   
+       try {
+         MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+         Member member = memberDao.exist(req.getParameter("email"), req.getParameter("password"));
+         if (member != null) {
+           req.setAttribute("member", member);
+           // 로그인 정보 세션에 저장
+           HttpSession session = req.getSession();
+           session.setAttribute("member", member);
+           // list 로 리다이렉트 요청 저장
+           req.setAttribute("viewUrl", "redirect:/member/list.do");
+         } else {
+           // 로그인 실패로 URL 저장
+           req.setAttribute("viewUrl", "/auth/LogInFail.jsp");
+         }
+       } catch (Exception e) {
+         throw new ServletException(e);
+       }
+     }
+   
+   }
+   ```
+
+   <br>
+
+5. **auth/LogInForm.jsp 페이지에 있는 링크 또는 폼의 URL에 .do를 붙이세요.**
+
+   ```jsp
+   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+   <html>
+     <head>
+       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+       <title>로그인</title>
+     </head>
+     <body>
+       <h2>사용자 로그인</h2>
+       <%-- URL에 .do 붙임 --%>
+       <form action="login.do" method="post">
+         이메일: <input type="text" name="email"><br>
+         암호: <input type="password" name="password"><br>
+         <input type="submit" value="로그인">
+       </form>
+     </body>
+   </html>
+   ```
+
+   <br>
+
+6. **Auth/LogInFail.jsp 페이지에 있는 링크 또는 폼의 URLdp .do를 붙이세요.**
+
+   ```jsp
+   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+   <html>
+     <head>
+       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+       <meta http-equiv="Refresh" content="1;url=login.do">
+       <title>로그인 실패</title>
+     </head>
+     <body>
+       <p>로그인 실패입니다. 이메일 또는 암호가 맞지 않습니다!<br>
+         잠시 후에 다시 로그인 화면으로 갑니다.</p>
+     </body>
+   </html>
+   ```
+
+   <br>
+
+7. **spms.servlets.LogOutServlet을 페이지 컨트롤러로 변경하세요.**
+
+   ```java
+   @WebServlet("/auth/logout")
+   public class LogOutServlet extends HttpServlet {
+   
+     @Override
+     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       // 회원 정보 삭제를 위한 세션 초기화
+       HttpSession session = req.getSession();
+       session.invalidate();
+   
+       // 로그인 url로 리다이렉트 요청 저장
+       req.setAttribute("viewUrl", "redirect:login.do");
+     }
+     
+   }
+   ```
+
+   <br>
+
+8. **Header.jsp 페이지에 있는 링크 또는 폼의 URL에 .do를 붙이세요. 또한 기존에 \<jsp:useBean> 및 \<% %>, \<%= %> 태그를 EL 태그로 교체하세요.**
+
+   ```jsp
+   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+   <div style="background-color: #00008b; color: #ffffff; height: 20px; padding: 5px;">
+     SPMS(Simple Project Management System)
+     <span style="float: right;">
+       ${member.name}
+       <a style="color: white;"
+          href="${request.getContextPath()}/auth/logout.do">로그아웃</a>
+     </span>
+   </div>
+   ```
+
+<br>
+
+# 6.2. 페이지 컨트롤러의 진화
+
+프런트 컨트롤러를 도입하면 페이지 컨트롤러를 굳이 서블릿으로 만들어야 할 이유가 없다.
+
+**일반 클래스로 만들면 서블릿 기술에 종속되지 않기 때문에 재사용성이 더 높아진다.**
+
+<br>
+
+## 6.2.1. 프런트 컨트롤러와 페이지 컨트롤러의 호출 규칙 정의
+
+프런트 컨트롤러가 페이지 컨트롤러를 일관성 있게 사용하려면, 호출 규칙을 정의해야 한다.
+
+- **프런트 컨트롤러와 페이지 컨트롤러의 호출 규칙**
+
+  <img src="../capture/스크린샷 2019-09-27 오전 1.56.00.png">
+
+  - 호출 규칙을 정의해 두면 그 규칙에 따라 클래스를 작성하고 호출하면 되기 때문에 일광성을 확보하고 유지보수에 도움이 된다.
+  - web.xml 파일에 등록할 필요가 없다.
+
+<br>
+
+## 6.2.2. 호출 규칙 정의
 
