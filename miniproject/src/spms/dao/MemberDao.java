@@ -79,7 +79,7 @@ public class MemberDao {
       member = new Member()
           .setNo(no)
           .setEmail(rs.getString("email"))
-          .setNo(rs.getShort("mname"))
+          .setName(rs.getString("mname"))
           .setCreateDate(rs.getDate("cre_date"));
     }
     return member;

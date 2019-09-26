@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+// 프런트 컨트롤러도 서블릿이기 때문에 HttpServlet 을 상속받는다.
 @WebServlet("*.do")
 public class DispatcherServlet extends HttpServlet {
 
@@ -48,10 +49,9 @@ public class DispatcherServlet extends HttpServlet {
       }
 
       RequestDispatcher rd = req.getRequestDispatcher(pageControllerPath);
-
       rd.include(req, resp);
-      String viewUrl = (String) req.getAttribute("viewUrl");
 
+      String viewUrl = (String) req.getAttribute("viewUrl");
       if (viewUrl.startsWith("redirect:")) {
         resp.sendRedirect(viewUrl.substring(9));
       } else {
