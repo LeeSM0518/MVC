@@ -762,11 +762,489 @@ throw new ServletException(e);
 
 서블릿으로 작성된 모든 페이지 컨트롤러를 프런트 컨트롤러의 호출 규칙에 맞추어 일반 클래스로 전환한다.
 
-- **일반 클래스로 만든 페이지 컨트롤러의 사용 시나리오**
+### *일반 클래스로 만든 페이지 컨트롤러의 사용 시나리오*
 
-  <img src="../capture/스크린샷 2019-09-28 오후 3.54.42.png">
+<img src="../capture/스크린샷 2019-09-28 오후 3.54.42.png">
 
+
+
+1. 웹 브라우저가 회원 목록 페이지 요청
+2. **프런트 컨트롤러는 회원 목록 요청 처리를 담당하는 페이지 컨트롤러를 호출. 이때 데이터 Map 객체 넘김**
+3. 페이지 컨트롤러는 Dao에게 회원 목록 데이터를 요청
+4. Dao는 데이터베이스로부터 회원 목록 데이터를 가져와, Member 객체에 담아 반환
+5. 페이지 컨트롤러는 Dao가 반환한 회원 목록 데이터를 Map 객체에 저장. 그 후, 프런트 컨트롤러에게 뷰 URL 반환
+6. 프런트 컨트롤러는 Map 객체에 저장된 페이지 컨트롤러의 작업 결과물을 JSP가 사용할 수 있도록 ServletRequest로 옮김
+7. 인클루딩
+
+<br>
+
+## 6.2.3. 페이지 컨트롤러를 위한 인터페이스 정의
+
+* **src/spms/Controller.java**
+
+  ```java
+  public interface Controller {
   
-
+    String execute(Map<String, Object> model) throws Exception;
   
+  }
+  ```
+
+  * **execute()** : 프런트 컨트롤러가 페이지 컨트롤러에게 일을 시키기 위해 호출하는 메서드이다.
+
+<br>
+
+## 6.2.4. 페이지 컨트롤러 MemberListServlet을 일반 클래스로 전환
+
+회원 목록을 처리하는 페이지 컨트롤러를 일반 클래스로 전환해보자.
+
+* **src/spms/controls/MemberListController.java**
+
+  ```java
+  public class MemberListController implements Controller {
+  
+    @Override
+    public String execute(Map<String, Object> model) throws Exception {
+      MemberDao memberDao = (MemberDao) model.get("memberDao");
+      model.put("members", memberDao.selectList());
+      return "/member/MemberList.jsp";
+    }
+    
+  }
+  ```
+
+<br>
+
+### *Controller 인터페이스의 구현*
+
+페이지 컨트롤러가 되려면 Controller 규칙에 따라 클래스를 작성해야 한다.
+
+```java
+public class MemberListController implements Controller {
+  public String execute(Map<String, Object> model) throws Exception {
+```
+
+* 예외가 발생했을 때 호출자인 프런트 컨트롤러에게 던지면 된다.
+
+<br>
+
+### *페이지 컨트롤러에게 사용할 객체를 Map에서 꺼내기*
+
+MemberDao 객체는 프런트 컨트롤러가 넘겨준 **'Map 객체(model)'** 에 들어 있다.
+
+```java
+MemberDao memberDao = (MemberDao)model.get("memberDao");
+```
+
+<br>
+
+### *페이지 컨트롤러가 작업한 결과물을 Map에 담기*
+
+**Map 객체 'model' 매개변수는** 페이지 컨트롤러가 작업한 **결과를 담을 때도 사용한다.**
+
+```java
+model.put("members", memberDao.selectList());
+```
+
+* Map 객체에 저장된 값은 프런트 컨트롤러가 꺼내서 **ServletReqeust 보관소로 옮긴다.**
+
+<br>
+
+### *뷰 URL 반환*
+
+페이지 컨트롤러의 반환값은 화면을 출력할 JSP의 URL이다.
+
+```java
+return "/member/MemberList.jsp";
+```
+
+<br>
+
+## 6.2.5. 프런트 컨트롤러 변경
+
+Controller 규칙에 따라 페이지 컨트롤러를 호출하도록 프런트 컨트롤러를 변경하자.
+
+* **spms/servlets/DispatcherServlet.java**
+
+  ```java
+  ...
+  try {
+    ServletContext sc = this.getServletContext();
+  
+    HashMap<String, Object> model = new HashMap<>();
+    model.put("memberDao", sc.getAttribute("memberDao"));
+  
+    String pageControllerPath = null;
+    Controller pageController = null;
+  
+    if ("/member/list.do".equals(servletPath)) {
+      pageController = new MemberListController();
+    } else if ("/member/add.do".equals(servletPath)) {
+      ...
+    } else if ("/member/update.do".equals(servletPath)) {
+      ...
+    } else if ("/member/delete.do".equals(servletPath)) {
+      ...
+    } else if ("/auth/login.do".equals(servletPath)) {
+      ...
+    } else if ("/auth/logout.do".equals(servletPath)) {
+      ...
+    }
+  
+    String viewUrl = pageController.execute(model);
+  
+    for (String key : model.keySet())
+      req.setAttribute(key, model.get(key));
+  
+    if (viewUrl.startsWith("redirect:")) {
+      resp.sendRedirect(viewUrl.substring(9));
+    } else {
+      RequestDispatcher rd = req.getRequestDispatcher(viewUrl);
+      rd.include(req, resp);
+    }
+  } catch (Exception e) { ...
+  ```
+
+<br>
+
+### *Map 객체 준비*
+
+프런트 컨트롤러와 페이지 컨트롤러 사이에 데이터나 객체를 주고 받을 때 사용할 **Map 객체를 준비한다.**
+
+```java
+ServletContext sc = this.getServletContext();
+HashMap<String, Object> model = new HashMap<>();
+model.put("memberDao", sc.getAttribute("memberDao"));
+```
+
+* 회원 목록을 가져오기 위해 **MemberDao를 ServletContext 보관소에서 꺼내서 Map 객체에 담았다.**
+
+<br>
+
+### *회원 목록을 처리할 페이지 컨트롤러 준비*
+
+Controller 인터페이스 타입의 **참조 변수를 선언한다.**
+
+```java
+Controller pageController = null;
+```
+
+<br>
+
+회원 목록 요청을 처리할 페이지 **컨트롤러를 준비한다.**
+
+```java
+if ("/member/list.do".equals(servletPath)) {
+  pageController = new MemberListController();
+}
+```
+
+<br>
+
+### *페이지 컨트롤러의 실행*
+
+이제는 페이지 컨트롤러가 일반 클래스이기 때문에 **메서드를 호출하기만 하면** 된다.
+
+```java
+String viewUrl = pageController.execute(model);
+```
+
+* execute()를 호출할 때 페이지 컨트롤러를 위해 준비한 **Map 객체를 매개변수로** 넘김.
+
+<br>
+
+### *Map 객체에 저장된 값을 ServletRequest에 복사*
+
+Map 객체는 페이지 컨트롤러의 실행 결과물을 받을 때도 사용한다. 따라서 **Map 객체에 보관되어 있는 데이터나 객체를 JSP가 사용할 수 있도록 ServletRequest에 복사한다.**
+
+```java
+for (String key : model.keySet()) {
+  req.setAttribute(key, model.get(key));
+}
+```
+
+<br>
+
+### *뷰로 실행 위임*
+
+나머지 코드는 이전과 같이 JSP로 실행을 위임하거나 리다이렉트 코드이다.
+
+<br>
+
+## 6.2.6. 회원 등록 페이지 컨트롤러에 Controller 규칙 적용하기
+
+* **spms/controls/MemberAddController.java**
+
+  ```java
+  public class MemberAddController implements Controller {
+    
+    @Override
+    public String execute(Map<String, Object> model) throws Exception {
+      // 입력폼을 요청할 때
+      if (model.get("member") == null) {
+        return "/member/MemberAdd.jsp";
+      } else {  // 회원 등록을 요청할 때
+        MemberDao memberDao = (MemberDao) model.get("memberDao");
+  
+        Member member = (Member) model.get("member");
+        memberDao.insert(member);
+        
+        // 데이터 저장 후 회원 목록 페이지로 리다이렉트 할 수 있도록 
+        // 반환 URL 앞에 "redirect:" 를 붙인다.
+        return "redirect:list.do";
+      }
+    }
+    
+  }
+  ```
+
+  * Map 객체에 VO 객체 **"Member"가 들어 있으면 POST** 요청으로 간주하고, **그렇지 않으면 GET** 요청으로 간주한다.
+
+<br>
+
+## 6.2.7. 회원 등록 요청을 처리하기 위해 DispatcherServlet 변경
+
+* **spms/src/servlets/DispatcherServlet.java**
+
+  ```java
+  ...
+  if ("/member/list.do".equals(servletPath)) {
+    pageController = new MemberListController();
+  } else if ("/member/add.do".equals(servletPath)) {
+    pageController = new MemberAddController();
+    if (req.getParameter("email") != null) {
+      model.put("member", new Member()
+                .setEmail(req.getParameter("email"))
+                .setPassword(req.getParameter("password"))
+                .setName(req.getParameter("name")));
+    }
+  }
+  ...
+  ```
+
+  * 사용자가 입력한 데이터에 대해 Member 객체를 만든 후 Map 객체에 담는다.
+
+<br>
+
+# 실력 향상 과제
+
+### *1.MemberUpdateController를 작성하세요.*
+
+spms/controls/MemberUpdateController.java
+
+```java
+public class MemberUpdateController implements Controller {
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    MemberDao memberDao = (MemberDao) model.get("memberDao");
+    Member member;
+    if (model.get("member") == null) {
+      // model로 부터 수정할 멤버 객체 번호를 가져와서 데이터베이스에서 조회
+      member = memberDao.selectOne(Integer.parseInt(String.valueOf(model.get("no"))));
+      // 맵 객체에 저장
+      model.put("member", member);
+      // 업데이트 URL 반환
+      return "/member/MemberUpdate.jsp";
+    } else {
+      // member 객체 가져와서 Dao를 통해 업데이트 요청
+      member = (Member) model.get("member");
+      memberDao.update(member);
+
+      // 회원 목록 URL로 리다이렉트 요청 URL 반환
+      return "redirect:list.do";
+    }
+  }
+
+}
+```
+
+<br>
+
+### *2.MemberDeleteController를 작성하세요.*
+
+spms/controls/MemberDeleteController.java
+
+```java
+public class MemberDeleteController implements Controller {
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    // 맵 객체로 부터 DAO 와 no 를 가져와서 DAO의 메소드를 호출해
+    // 회원 삭제
+    MemberDao memberDao = (MemberDao) model.get("memberDao");
+    memberDao.delete(Integer.parseInt(String.valueOf(model.get("no"))));
+    // 회원 목록으로 리다이렉트 URL 반환
+    return "redirect:list.do";
+  }
+
+}
+```
+
+<br>
+
+### *3.LogInController를 작성하세요.*
+
+spms/controls/LogInController.java
+
+```java
+public class LogInController implements Controller {
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    // 맵 객체에 member가 존재하지 않을시, 로그인 URL 반환
+    if (model.get("member") == null) {
+      return "/auth/LogInForm.jsp";
+    } 
+    // 존재하면, 맵 객체로부터 DAO, member, Session 객체를 가져와서
+    // 멤버가 존재하는지 확인한 뒤, Session에 보관하고 회원 목록으로 리다이렉트 하는 URL을 반환하거나
+    // 로그인 실패 URL을 반환한다.
+    else {
+      MemberDao memberDao = (MemberDao) model.get("memberDao");
+      Member member = (Member) model.get("member");
+      Member existMember = memberDao.exist(member.getEmail(), member.getPassword());
+      if (existMember != null) {
+        ((HttpSession) model.get("session"))
+            .setAttribute("member", existMember);
+        return "redirect:/member/list.do";
+      } else {
+        return "/auth/LogInFail.jsp";
+      }
+    }
+  }
+
+}
+```
+
+<br>
+
+### *4.LogOutController를 작성하세요.*
+
+spms/controls/LogOutController.java
+
+```java
+public class LogOutController implements Controller {
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    // 맵 객체로 부터 Session 객체를 가져와서 초기화 해준뒤
+    // 로그인 화면으로 리다이렉트 하는 URL 반환
+    HttpSession session = (HttpSession) model.get("session");
+    session.invalidate();
+    return "redirect:login.do";
+  }
+
+}
+```
+
+<br>
+
+### *5.DispatcherServlet을 변경하세요.*
+
+spms/servlets/DispatcherServlet.java
+
+```java
+...
+} else if ("/member/update.do".equals(servletPath)) {
+  pageController = new MemberUpdateController();
+  // "no" 정보를 맵 객체에 담는다.
+  model.put("no", req.getParameter("no"));
+  if (req.getParameter("email") != null) {
+    // 맵 객체에 member 객체를 담는다.
+    model.put("member", new Member()
+              .setNo(Integer.parseInt(req.getParameter("no")))
+              .setEmail(req.getParameter("email"))
+              .setName(req.getParameter("name")));
+  }
+} else if ("/member/delete.do".equals(servletPath)) {
+  pageController = new MemberDeleteController();
+  // 맵 객체에 "no" 정보를 담는다.
+  model.put("no", req.getParameter("no"));
+} else if ("/auth/login.do".equals(servletPath)) {
+  pageController = new LogInController();
+  // 맵 객체에 member 객체 정보와 session 객체를 담는다.
+  if (req.getParameter("email") != null) {
+    model.put("member", new Member()
+              .setEmail(req.getParameter("email"))
+              .setPassword(req.getParameter("password")));
+    model.put("session", req.getSession());
+  }
+} else if ("/auth/logout.do".equals(servletPath)) {
+  pageController = new LogOutController();
+  // 맵 객체에 session 객체를 담는다.
+  model.put("session", req.getSession());
+}
+...
+```
+
+<br>
+
+# 6.3. DI를 이용한 빈 의존성 관리
+
+MemberListController가 작업을 수행하려면 데이터베이스로부터 회원 정보를 가져다줄 MemberDao가 필요하다. 이렇게 **특정 작업을 수행할 때 사용하는 객체를 '의존 객체' 라고 하고, 이런 관계를 '의존 관계(dependency)' 라고 한다.**
+
+- **의존 관계**
+
+  <img src="../capture/스크린샷 2019-09-30 오전 12.56.40.png">
+
+<br>
+
+## 6.3.1. 의존 객체의 관리
+
+### *의존 객체가 필요하면 즉시 생성*
+
+고전적인 방법은 의존 객체를 사용하는 쪽에서 직접 그 객체를 생성하고 관리하는 것이다.
+
+- **MemberListServlet의 일부 코드**
+
+  ```java
+  public void doGet(HttpServletRequest request, HttpServletResponse response)
+    throws ServletException, IOException {
+    try {
+      ServletContext sc = this.getServletContext();
+      Connection conn = (Connection) sc.getAttribute("conn");
+      
+      MemberDao memberDao = new MemberDao();
+      memberDao.setConnection(conn);
+      
+      request.setAttribute("members", memberDao.selectList());
+  ...
+  ```
+
+  - 이 방식은 doGet()이 호출될 때마다 MemberDao 객체를 생성하기 때문에 비효율적이다.
+
+<br>
+
+### *의존 객체를 미리 생성해 두었다가 필요할 때 사용*
+
+사용할 객체를 미리 생성해 두고 필요할 때마다 꺼내 쓰는 방식입니다. 
+
+웹 애플리케이션이 **시작될 때 MemberDao 객체를 미리 생성하여 ServletContext에 보관해둔다.**
+
+- **MemberListServlet의 일부 코드**
+
+  ```java
+  public void doGet{
+    HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+      try {
+        ServletContext sc = this.getServletContext();
+        MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+        memberDao.setConnection(conn);
+        
+        request.setAttribute("members", memberDao.selectList());
+        ...
+  ```
+
+- **MemberListController의 일부 코드**
+
+  ```java
+  public String execute(Map<String, Object> model) throws Exception {
+    MemberDao memberDao = (MemberDao) model.get("memberDao");
+    model.put("members", memberDao.selectList());
+    return "/member/MemberList.jsp";
+  }
+  ```
+
+<br>
 
