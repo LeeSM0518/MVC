@@ -1248,3 +1248,237 @@ MemberListController가 작업을 수행하려면 데이터베이스로부터 �
 
 <br>
 
+### *의존 객체와의 결합도 증가에 따른 문제*
+
+앞에서 처럼 의존 객체를 직접 생성하거나 보관소에서 꺼내는 방식에는 문제가 있다.
+
+<br>
+
+**코드의 잦은 변경**
+
+<u>의존 객체를 사용하는 쪽과 의존 객체(또는 보관소) 사이의 결합도가 높아져서</u> 의존 객체나 보관소에 변경이 발생하면 바로 영향을 받는다는 것이다.
+
+* **코드의 유지 보수가 어려움**
+
+  <img src="../capture/스크린샷 2019-10-01 오후 10.18.41.png" width=600>
+
+<br>
+
+* **대체가 어렵다**
+
+  * 만약 MySQL 데이터베이스를 사용하다가 오라클 데이터베이스를 사용해야 한다면, 일부 SQL 문을 그에 맞게끔 변경해야 한다.
+  * 즉, 데이터베이스가 바뀔 대마다 DAO를 사용하는 코드도 변경해야 한다.
+  * 다른 객체로 교체하기 어려움
+
+  <img src="../capture/스크린샷 2019-10-01 오후 10.25.53.png">
+
+<br>
+
+## 6.3.2. 의존 객체를 외부에서 주입
+
+초창기 객체 지향 프로그래밍에서는 의존 객체를 직접 생성하였으나, 지금은 **의존 객체를 외부에서 주입받는 방식(Dependency Injection)으로** 바뀌게 된다.
+
+* **빈 컨테이너와 의존 객체의 주입**
+
+  <img src="../capture/스크린샷 2019-10-01 오후 10.29.22.png" width=600>
+
+  * 의존 객체를 전문으로 관리하는 **'빈 컨테이너(Java Beans Container)'가** 등장하게 되었다.
+  * **빈 컨테이너는 객체가 실행되기 전에 그 객체가 필요로 하는 의존 객체를 주입해 주는 역할을 수행한다.**
+  * 이처럼 의존 객체를 관리하는 것을 **'의존성 주입(DI: Dependency Injection)'** 이라고 한다.
+  * 일반적인 말로 **'역 제어(IoC: Inversion of Control)'** 라고 부른다.
+  * 즉 **역제어(IoC)** 방식의 한 예가 **의존성 주입(DI)** 이다.
+
+<br>
+
+## 6.3.3. MemberDao 와 DataSource
+
+DataSource 객체를 MemberDao에서 직접 생성하는 것이 아니라 외부에서 주입 받는다.
+
+* **MemberDao에 DataSource를 주입하는 코드(src/spms/listeners/ContextLoaderListener.java)**
+
+  ```java
+  public void contextInitialzed(ServletContextEvent event) {
+    try {
+      ServletContext sc = event.getServletContext();
+      
+      InitialContext initialContext = new InitialContext();
+      DataSource ds = (DataSource)initialContext.lookup(
+        "java:comp/env/jdbc/studydb");
+      
+      MemberDao memberDao = new MemberDao();
+      memberDao.setDataSource(ds);
+      ...
+  ```
+
+  * **contextInitialized()** : 웹 애플리케이션이 시작될 때 호출되는 메서드이다.
+  * **setDataSource()** : MemberDao가 사용할 의존 객체인 'DataSource'를 주입하는 메소드
+
+<br>
+
+## 6.3.4. MemberListController에 MemberDao 주입
+
+MemberListController에도 DI를 적용해 보자.
+
+* **src/spms/controls/MemberListController.java**
+
+  ```java
+  public class MemberListController implements Controller {
+  
+    MemberDao memberDao;
+  
+    public MemberListController setMemberDao(MemberDao memberDao) {
+      this.memberDao = memberDao;
+      return this;
+    }
+  
+    @Override
+    public String execute(Map<String, Object> model) throws Exception {
+      MemberDao memberDao = (MemberDao) model.get("memberDao");
+      model.put("members", memberDao.selectList());
+      return "/member/MemberList.jsp";
+    }
+  
+  }
+  ```
+
+<br>
+
+### *의존 객체 주입을 위한 인스턴스 변수와 셋터 메서드*
+
+MemberListController에 MemberDao를 주입 받기 위한 인스턴스 변수와 셋터 메서드를 추가한다.
+
+```java
+public MemberListController setMemberDao(MemberDao memberDao) {
+  this.memberDao = memberDao;
+  return this;
+}
+```
+
+<br>
+
+# 실력 향상 과제
+
+나머지 모든 페이지 컨트롤러도 MemberDao를 주입하기 위한 인스턴스 변수와 셋터 메서드를 추가해라.
+
+* **LogInController**
+* **MemberAddController**
+* **MemberUpdateController**
+* **MemberDeleteController**
+
+<br>
+
+## 6.3.5. 페이지 컨트롤러 객체들을 준비
+
+페이지 컨트롤러도 MemberDao 처럼 ContextLoaderListener에 준비해보자.
+
+* **src/spms/listeners/ContextLoaderListener.java 일부분**
+
+  ```java
+  @Override
+  public void contextInitialized(ServletContextEvent sce) {
+    try {
+      ServletContext sc = sce.getServletContext();
+      sc.setRequestCharacterEncoding("UTF-8");
+  
+      InitialContext initialContext = new InitialContext();
+      DataSource ds = (DataSource) initialContext.lookup("java:comp/env/jdbc/postgresql");
+  
+      MemberDao memberDao = new MemberDao();
+      memberDao.setDataSource(ds);
+  
+      //      sc.setAttribute("memberDao", memberDao);
+      sc.setAttribute("/auth/login.do",
+                      new LogInController().setMemberDao(memberDao));
+      sc.setAttribute("/auth/logout.do",
+                      new LogOutController());
+      sc.setAttribute("/member/list.do",
+                      new MemberListController().setMemberDao(memberDao));
+      sc.setAttribute("/member/add.do",
+                      new MemberAddController().setMemberDao(memberDao));
+      sc.setAttribute("/member/update.do",
+                      new MemberUpdateController().setMemberDao(memberDao));
+      sc.setAttribute("/member/delete.do",
+                      new MemberDeleteController().setMemberDao(memberDao));
+  
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+  }
+  ```
+
+  * MemberDao 객체는 별도로 꺼내서 사용할 일이 없기 때문에 ServletContext에 저장하지 않는다.
+
+    ```java
+    sc.setAttribute("memberDao", memberDao);
+    ```
+
+    <br>
+
+### *페이지 컨트롤러 객체를 준비*
+
+페이지 컨트롤러 객체를 생성하고 나서 MemberDao가 필요한 객체에 대해서는 셋터 메서드를 호출하여 주입해준다.
+
+```java
+new LogInController().setMemberDao(memberDao)
+```
+
+<br>
+
+이렇게 생성된 페이지 컨트롤러를 ServletContext에 저장한다. 단, **저장할 때 서블릿 요청 URL을 키(key)로 하여 저장한다.**
+
+```java
+sc.setAttribute("/auth/login.do",
+               new LogInController().setMemberDao(memberDao));
+```
+
+<br>
+
+## 6.3.6. 프런트 컨트롤러의 변경
+
+페이지 컨트롤러 객체를 ContextLoaderListener 에서 준비했기 때문에 프런트 컨트롤러를 변경해야 한다.
+
+- **src/spms/servlets/DispatcherServlet.java의 일부분**
+
+  ```java
+  protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    resp.setContentType("text/html; charset=UTF-8");
+    String servletPath = req.getServletPath();
+  
+    try {
+      ServletContext sc = this.getServletContext();
+  
+      HashMap<String, Object> model = new HashMap<>();
+      // memberDao 객체는 더 이상 Map 객체에 담을 필요가 없다.
+      // model.put("memberDao", sc.getAttribute("memberDao"));
+      model.put("session", req.getSession());
+  
+      Controller pageController = (Controller) sc.getAttribute(servletPath);
+  
+      if ("/member/add.do".equals(servletPath)) {
+        if (req.getParameter("email") != null) {
+          model.put("member", new Member()
+                    .setEmail(req.getParameter("email"))
+                    .setPassword(req.getParameter("password"))
+                    .setName(req.getParameter("name")));
+        }
+      } else if ("/member/update.do".equals(servletPath)) {
+        if (req.getParameter("email") != null) {
+          model.put("member", new Member()
+                    .setNo(Integer.parseInt(req.getParameter("no")))
+                    .setEmail(req.getParameter("email"))
+                    .setName(req.getParameter("name")));
+        } else {
+          model.put("no", req.getParameter("no"));
+        }
+      } else if ("/member/delete.do".equals(servletPath)) {
+        model.put("no", req.getParameter("no"));
+      } else if ("/auth/login.do".equals(servletPath)) {
+        if (req.getParameter("email") != null) {
+          model.put("member", new Member()
+                    .setEmail(req.getParameter("email"))
+                    .setPassword(req.getParameter("password")));
+        }
+      }
+      ...
+  ```
+
