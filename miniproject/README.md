@@ -1452,8 +1452,10 @@ sc.setAttribute("/auth/login.do",
       // model.put("memberDao", sc.getAttribute("memberDao"));
       model.put("session", req.getSession());
   
+      // 이 보관소에서 페이지 컨트롤러를 꺼낼 때는 서블릿 URL을 사용한다.
       Controller pageController = (Controller) sc.getAttribute(servletPath);
   
+      // 페이지 컨트롤러가 사용할 데이터를 준비하는 부분을 제외하고는 모두 제거한다.
       if ("/member/add.do".equals(servletPath)) {
         if (req.getParameter("email") != null) {
           model.put("member", new Member()
@@ -1481,4 +1483,614 @@ sc.setAttribute("/auth/login.do",
       }
       ...
   ```
+
+<br>
+
+## 6.3.7. 인터페이스를 활용하여 공급처를 다변화 하자
+
+다른 데이터베이스들을 사용하려면 데이터베이스에 맞추어 DAO 클래스를 준비하거나 코드를 변경해야 하기 때문에 매우 번거롭다. 이런 경우에 바로 **인터페이스를 활용하면 손쉽게 해결할 수 있다.**
+
+<br>
+
+* **인터페이스를 활용한 결합도 감소 - 교체 용이**
+
+  <img src="../capture/스크린샷 2019-10-04 오후 9.10.29.png">
+
+  * 의존 객체를 사용할 때 구체적으로 클래스 이름을 명시하는 대신에 **인터페이스를 사용하면,** 그 자리에 다양한 구현체를 놓을 수 있다.
+
+<br>
+
+## 6.3.8. MemberDao 인터페이스 정의
+
+* **spms/dao/MemberDao**
+
+  ```java
+  public interface MemberDao {
+  
+    List<Member> selectList() throws Exception;
+    int insert(Member member) throws Exception;
+    int delete(int no) throws Exception;
+    Member selectOne(int no) throws Exception;
+    int update(Member member) throws Exception;
+    Member exist(String email, String password) throws Exception;
+  
+  }
+  ```
+
+* **spms/dao/PostgresSqlMemberDao**
+
+  ```java
+  // MemberDao 구현
+  public class PostgresSqlMemberDao implements MemberDao {
+  ```
+
+* **spms/listeners/ContextLoaderListener**
+
+  ```java
+  @Override
+  public void contextInitialized(ServletContextEvent sce) {
+    try {
+      ServletContext sc = sce.getServletContext();
+      sc.setRequestCharacterEncoding("UTF-8");
+  
+      InitialContext initialContext = new InitialContext();
+      DataSource ds = (DataSource) initialContext.lookup("java:comp/env/jdbc/postgresql");
+  
+      // 이제 MemberDao는 인터페이스이기 때문에 인스턴스를 생성할 수 없다.
+      // MemberDao memberDao = new MemberDao();
+      PostgresSqlMemberDao memberDao = new PostgresSqlMemberDao();
+      memberDao.setDataSource(ds);
+  ```
+
+  * MemberDao 대신 PostgresSqlMemberDao 객체를 생성한다. 따라서 **페이지 컨트롤러에 주입되는 것은 PostgresSqlMemberDao 이다.**
+
+* **모든 서블릿의 execute 안에 MemberDao를 맵객체로 부터 가져오는 코드를 제거한다(NullPointerException 방지).**
+
+<br>
+
+# 6.4. 리플랙션 API를 이용하여 프런트 컨트롤러 개선하기
+
+프런트 컨트롤러의 코드의 중에서, 매개변수 값을 받아서 VO 객체를 생성하는 부분은 페이지 컨트롤러를 추가할 때마다 코드를 변경해야 되는 문제가 있다. 
+
+이번 절에서 **리플랙션 API를 활용하여** 인스턴스를 자동 생성하고, 메서드를 자동으로 호출할 것이다.
+
+<br>
+
+## 6.4.1. 신규 회원 정보 추가 자동화
+
+**프런트 컨트롤러에서 VO 객체 생성 자동화**
+
+<img src="../capture/스크린샷 2019-10-04 오후 9.44.43.png">
+
+1. 웹 브라우저에서 회원 등록 요청.
+2. 프런트 컨트롤러는 페이지 컨트롤러에게 필요한 데이터의 이름과 타입 정보를 담은 배열을 리턴받는다.
+3. 프런트 컨트롤러는 ServletRequestDataBinder를 이용하여, 요청 매개변수로부터 페이지 컨트롤러가 원하는 형식의 값 객체를 만든다.
+4. 프런트 컨트롤러는 ServletRequestDataBinder가 만들어 준 값 객체를 Map에 저장한다.
+5. 프런트 컨트롤러는 페이지 컨트롤러의 execute()에 Map 객체를 매개변수로 하여 호출한다.
+
+<br>
+
+## 6.4.2. DataBinding 인터페이스 정의
+
+프런트 컨트롤러는 페이지 컨트롤러가 실행되기 전에 필요한 **데이터를 요청하는 것에 대해 호출 규칙을 정해놓아야 한다.**
+
+프런트 컨트롤러는 이 규칙을 준수하기 위해 페이지 컨트롤러를 호출할 때만 VO 객체를 준비하면 된다.
+
+<br>
+
+* **src/spms/bind/DataBinding.java**
+
+  ```java
+  public interface DataBinding {
+    
+    Object[] getDataBinders();
+    
+  }
+  ```
+
+  * 페이지 컨트롤러 중에서 클라이언트가 보낸 데이터가 필요한 경우 이 인터페이스를 구현한다.
+
+  * getDataBinders 메소드의 반환값은 **데이터의 이름과 타입 정보를 담은 Object의 배열이다.**
+
+    ```java
+    new Object[] { "데이터이름", 데이터타입, "데이터이름", 데이터타입, ... }
+    ```
+
+  * 데이터 이름과 데이터 타입이 한 쌍으로 순서대로 오도록 작성한다.
+
+<br>
+
+## 6.4.3. 페이지 컨트롤러의 DataBinding 구현
+
+클라이언트가 보낸 데이터를 사용하는 페이지 컨트롤러는 MemberAddController, MemberUpdateController, MemberDeleteController, LogInController 이다.
+
+* **spms/controls/MemberAddController**
+
+  ```java
+  // DataBinding 인터페이스 구현 선언
+  public class MemberAddController implements Controller, DataBinding {
+  
+    PostgresSqlMemberDao memberDao;
+  
+    public MemberAddController setMemberDao(PostgresSqlMemberDao memberDao) {
+      this.memberDao = memberDao;
+      return this;
+    }
+  
+    // member 객체 저장 위치 변경
+    @Override
+    public String execute(Map<String, Object> model) throws Exception {
+      Member member = (Member)model.get("member");
+      if (member.getEmail() == null) {
+        return "/member/MemberAdd.jsp";
+      } else {
+        memberDao.insert(member);
+  
+        return "redirect:list.do";
+      }
+    }
+  
+    // 메서드 구현
+    @Override
+    public Object[] getDataBinders() {
+      return new Object[] {
+          "member", spms.vo.Member.class
+      };
+    }
+  
+  }
+  ```
+
+  * getDataBinders() 메서드를 보면, "member" 와 spms.vo.Member.class 가 있는데 이것은 **클라이언트가 보낸 매개변수 값을 Member 인스턴스에 담아서 "member" 라는 이름으로 Map 객체에 저장해 달라는 뜻이다.**
+
+  * 프런트 컨트롤러는 Object 배열에 지정된 대로 **Member 인스턴스를 준비하여 Map 객체에 저장하고,** execute()를 호출할 때 매개변수로 이 **Map 객체를 넘길 것이다.**
+
+  * 기존의 execute() 와 달리 Member 존재 여부로 get, post 들 구분하면 안되고, 이메일이 존재하는지로 구분해야 한다.
+
+    **execute() 이전 코드**
+
+    ```java
+    if (model.get("member") == null) { ... }
+    else { ... }
+    ```
+
+    **execute() 현재 코드**
+
+    ```java
+    Member member = (Member) model.get("member");
+    if (member.getEmail() == null) { ... }
+    else { ... }
+    ```
+
+<br>
+
+# 실력 향상 과제
+
+모든 페이지 컨트롤러에 대해서도 DataBinding 인터페이스를 구현하라.
+
+1. **LogInController**
+
+   ```java
+   ...
+     @Override
+     public String execute(Map<String, Object> model) throws Exception {
+       Member member = (Member) model.get("member");
+       if (member.getEmail() == null) {
+         return "/auth/LogInForm.jsp";
+       } else {
+         Member existMember = memberDao.exist(member.getEmail(), member.getPassword());
+         if (existMember != null) {
+           ((HttpSession) model.get("session"))
+               .setAttribute("member", existMember);
+           return "redirect:/member/list.do";
+         } else {
+           return "/auth/LogInFail.jsp";
+         }
+       }
+     }
+   
+     @Override
+     public Object[] getDataBinders() {
+       // 사용자가 입력한 이메일과 암호가 필요하기 때문에 member 객체 필요
+       return new Object[] {
+           "member", spms.vo.Member.class
+       };
+     }
+   ...
+   ```
+
+2. **MemberUpdateController**
+
+   ```java
+   ...
+     @Override
+     public String execute(Map<String, Object> model) throws Exception {
+       Member member = (Member) model.get("member");
+       if (member.getEmail() == null) {
+         member = memberDao.selectOne(Integer.parseInt(String.valueOf(model.get("no"))));
+         model.put("member", member);
+         return "/member/MemberUpdate.jsp";
+       } else {
+         memberDao.update(member);
+         return "redirect:list.do";
+       }
+     }
+   
+     @Override
+     public Object[] getDataBinders() {
+       // 변경폼을 출력할 때 회원 번호가 필요하고, 데이터를 변경할 때
+       // Member 인스턴스가 필요하다.
+       return new Object[] {
+           "no", Integer.class,
+           "member", spms.vo.Member.class
+       };
+     }
+   ...
+   ```
+
+3. **MemberDeleteController**
+
+   ```java
+   ...
+   	@Override
+     public String execute(Map<String, Object> model) throws Exception {
+       memberDao.delete(Integer.parseInt(String.valueOf(model.get("no"))));
+       return "redirect:list.do";
+     }
+   
+     @Override
+     public Object[] getDataBinders() {
+       // 회원 정보를 삭제할 때 회원 번호가 필요하다.
+       return new Object[]{
+           "no", Integer.class
+       };
+     }
+   ...
+   ```
+
+<br>
+
+## 6.4.4. 프런트 컨트롤러의 변경
+
+**src/spms/servlets/DispatcherServlet.java**
+
+```java
+@WebServlet("*.do")
+public class DispatcherServlet extends HttpServlet {
+
+  @Override
+  protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    resp.setContentType("text/html; charset=UTF-8");
+    String servletPath = req.getServletPath();
+
+    try {
+      ServletContext sc = this.getServletContext();
+
+      HashMap<String, Object> model = new HashMap<>();
+      model.put("session", req.getSession());
+
+      Controller pageController = (Controller) sc.getAttribute(servletPath);
+
+//      if ("/member/add.do".equals(servletPath)) {
+//        if (req.getParameter("email") != null) {
+//          model.put("member", new Member()
+//              .setEmail(req.getParameter("email"))
+//              .setPassword(req.getParameter("password"))
+//              .setName(req.getParameter("name")));
+//        }
+//      } else if ("/member/update.do".equals(servletPath)) {
+//        if (req.getParameter("email") != null) {
+//          model.put("member", new Member()
+//              .setNo(Integer.parseInt(req.getParameter("no")))
+//              .setEmail(req.getParameter("email"))
+//              .setName(req.getParameter("name")));
+//        } else {
+//          model.put("no", req.getParameter("no"));
+//        }
+//      } else if ("/member/delete.do".equals(servletPath)) {
+//        model.put("no", req.getParameter("no"));
+//      } else if ("/auth/login.do".equals(servletPath)) {
+//        if (req.getParameter("email") != null) {
+//          model.put("member", new Member()
+//              .setEmail(req.getParameter("email"))
+//              .setPassword(req.getParameter("password")));
+//        }
+//      }
+
+      if (pageController instanceof DataBinding) {
+        prepareRequestData(req, model, (DataBinding)pageController);
+      }
+
+      String viewUrl = pageController.execute(model);
+
+      for (String key : model.keySet())
+        req.setAttribute(key, model.get(key));
+
+      if (viewUrl.startsWith("redirect:")) {
+        resp.sendRedirect(viewUrl.substring(9));
+      } else {
+        RequestDispatcher rd = req.getRequestDispatcher(viewUrl);
+        rd.include(req, resp);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      req.setAttribute("error", e);
+      RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+      rd.forward(req, resp);
+    }
+  }
+
+  private void prepareRequestData(HttpServletRequest request,
+                                  HashMap<String, Object> model, DataBinding dataBinding) throws Exception {
+    Object[] dataBinders = dataBinding.getDataBinders();
+    String dataName;
+    Class<?> dataType;
+    Object dataObj;
+    for (int i = 0; i < dataBinders.length; i += 2) {
+      dataName = (String) dataBinders[i];
+      dataType = (Class<?>) dataBinders[i+1];
+      dataObj = ServletRequestDataBinder.bind(request, dataType, dataName);
+      model.put(dataName, dataObj);
+    }
+  }
+}
+```
+
+- **service() 메서드**
+
+  - 매개변수 값을 사용하는 페이지 컨트롤러를 추가하더라도 조건문을 삽입할 필요가 없다.
+
+  - 대신 데이터 준비를 자동으로 수행하는 prepareRequestData()를 호출한다.
+
+    ```java
+    if (pageController instanceof DataBinding) {
+      prepareRequestData(request, model, (DataBinding)pageController);
+    }
+    ```
+
+    - prepareRequestData()를 호출하여 페이지 컨트롤러를 위한 데이터를 준비한다.
+
+- **prepareRequestData() 메서드**
+
+  - 페이지 컨트롤러에게 필요한 데이터가 무엇인지 가져온다.
+
+    ```java
+    Object[] dataBinders = dataBinding.getDataBinders();
+    ```
+
+  - 배열에서 꺼낸 값을 보관할 임시 변수를 준비한다.
+
+    ```java
+    String dataName = null;
+    Class<?> dataType = null;
+    Object dataObj = null;
+    ```
+
+  - 데이터 이름과 데이터 타입을 꺼낸다.
+
+    ```java
+    for (int i =0; i < dataBinders.length; i += 2) {
+      dataName = (String)dataBinders[i];
+      dataType = (Class<?>) dataBinders[i+1];
+      ...
+    }
+    ```
+
+  - dataName과 일치하는 요청 매개변수를 찾고 dataType을 통해 해당 클래스의 인스턴스를 생성한다. 찾은 매개변수 값을 인스턴스에 저장하며 그 인스턴스를 반환한다.
+
+    ```java
+    dataObj = servletRequestDataBinder.bind(request, dataType, dataName);
+    model.put(dataName, dataObj);
+    ```
+
+    - bind() 메서드가 반환한 객체는 map 객체에 담는다. 페이지 컨트롤러가 사용할 데이터를 준비시킨다.
+
+<br>
+
+## 6.4.5. ServletRequestDataBinder 클래스 생성
+
+```java
+import javax.servlet.ServletRequest;
+import java.lang.reflect.Method;
+import java.util.Date;
+import java.util.Set;
+
+public class ServletRequestDataBinder {
+
+  public static Object bind(ServletRequest request, Class<?> dataType, String dataName)
+    throws Exception {
+    if (isPrimitiveType(dataType)) {
+      return createValueObject(dataType, request.getParameter(dataName));
+    }
+
+    Set<String> paramNames = request.getParameterMap().keySet();
+    Object dataObject = dataType.newInstance();
+    Method m;
+
+    for (String paramName : paramNames) {
+      m = findSetter(dataType, paramName);
+      if (m != null) {
+        m.invoke(dataObject, createValueObject(m.getParameterTypes()[0],
+            request.getParameter(paramName)));
+      }
+    }
+    return dataObject;
+  }
+
+  private static boolean isPrimitiveType(Class<?> type) {
+    if (type.getName().equals("int") || type == Integer.class ||
+    type.getName().equals("long") || type == Long.class ||
+    type.getName().equals("float") || type == Float.class ||
+    type.getName().equals("double") || type == Double.class ||
+    type.getName().equals("boolean") || type == Boolean.class ||
+    type == Date.class || type == String.class) {
+      return true;
+    }
+    return false;
+  }
+
+  private static Object createValueObject(Class<?> type, String value) {
+    if (type.getName().equals("int") || type == Integer.class) {
+      return Integer.valueOf(value);
+    } else if (type.getName().equals("float") || type == Float.class) {
+      return Float.valueOf(value);
+    } else if (type.getName().equals("double") || type == Double.class) {
+      return Double.valueOf(value);
+    } else if (type.getName().equals("long") || type == Long.class) {
+      return Long.valueOf(value);
+    } else if (type.getName().equals("boolean") || type == Boolean.class) {
+      return Boolean.valueOf(value);
+    } else if (type == Date.class) {
+      return java.sql.Date.valueOf(value);
+    } else {
+      return value;
+    }
+  }
+
+  private static Method findSetter(Class<?> type, String name) {
+    Method[] methods = type.getMethods();
+
+    String propName;
+    for (Method m : methods) {
+      if (!m.getName().startsWith("set")) continue;
+      propName = m.getName().substring(3);
+      if (propName.toLowerCase().equals(name.toLowerCase())) {
+        return m;
+      }
+    }
+    return null;
+  }
+
+}
+```
+
+- **bind() 메서드**
+
+  - 프런트 컨트롤러에서 호출하는 메서드이다,
+
+  - 요청 매개변수의 값과 데이터 이름, 데이터 타입을 받아서 **데이터 객체를 만드는 일을 한다.**
+
+    ```java
+    public static Object bind(ServletRequest request, Class<?> dataType, String dataName)
+      throws Exception {
+      ...
+      return dataObject;
+    }
+    ```
+
+    <br>
+
+  - dataType이 기본 타입인지 아닌지 검사
+
+    ```java
+    if (isPrimitiveType(dataType)) {
+      return createValueObject(dataType, request.getParameter(dataName));
+    }
+    ```
+
+    - **isPrimitiveType()** : 기본 타입임을 확인하면 true 반환
+    - **createValueObject()** : 기본 타입 객체를 생성
+
+    <br>
+
+  - dataType이 기본 타입이 아닌 경우 요청 매개 변수의 이름과 일치하는 셋터 메서드를 찾아서 호출
+
+    ```java
+    Set<String> paramNames = request.getParameterMap().keySet();
+    ```
+
+    - **request.getParameterMap()** : 매개변수의 이름과 값을 맵 객체에 담아서 반환. 우리가 필요한 것은 매개변수의 이름이기 때문에 Map의 keySet()을 호출하여 이름 목록만 꺼낸다.
+
+    <br>
+
+  - Class의 newInstance()를 사용하면 해당 클래스의 인스턴스를 얻을 수 있다.
+
+    ```java
+    Object dataObject = dataType.newInstance();
+    ```
+
+    <br>
+
+  - 반복문을 통해서 데이터 타입 클래스에서 매개변수 이름과 일치하는 프로퍼티(셋터 메서드)를 찾는다.
+
+    ```java
+    for (String paramName : paramNames) {
+      m = findSetter(dataType, paramName);
+      ...
+    }
+    ```
+
+    - **findSetter()** : 내부에 선언된 메서드로서, 데이터 타입(Class)과 매개변수 이름(String)을 주면 셋터 메서드를 찾아서 반환한다.
+
+    <br>
+
+  - 셋터 메서드를 찾았으면 이전에 생성한 dataObject에 대해 호출한다.
+
+    ```java
+    if (m != null) {
+      m.invoke(dataObject, ...);
+    }
+    ```
+
+    <br>
+
+  - 셋터 메서드를 호출할 때 요청 매개변수의 값을 그 형식에 맞추어 넘긴다.
+
+    ```java
+    createValueObject(
+      m.getParameterType()[0],        // 셋터 메서드의 매개변수 타입
+      request.getParameter(paramName) // 요청 매개변수의 값
+    )
+    ```
+
+    - 요청 매개변수의 값을 가지고 기본 타입의 객체를 만들어 준다.
+
+    <br>
+
+- **isPrimitiveType() 메서드**
+
+  - 매개변수로 주어진 타입이 기본 타입인지 검사하는 메서드
+
+  <br>
+
+- **createValueObject() 메서드**
+
+  - 이 메서드는 셋터로 값을 할당할 수 없는 기본 타입에 대해 객체를 생성하는 메서드이다.
+
+  <br>
+
+- **findSetter() 메서드**
+
+  - 클래스(type)를 조사하여 주어진 이름(name)과 일치하는 셋터 메서드를 찾는다.
+
+    ```java
+    private static Method findSetter(Class<?> type, String name) {
+    ```
+
+    <br>
+
+  - 제일 먼저 데이터 타입에서 메서드 목록을 얻는다.
+
+    ```java
+    Method[] methods = type.getMethods();
+    ```
+
+    <br>
+
+  - 메서드 목록을 반복하여 셋터 메서드가 아니면 무시하도록 한다.
+
+    ```java
+    for (Method m : methods) {
+      if (!m.getName().startWith("set")) continue;
+    ```
+
+    <br>
+
+  - 셋터 메서드일 경우 요청 매개변수의 이름과 일치하는 검사
+
+    ```java
+    if (propName.toLowerCase().equals(name.toLowerCase())) {
+      return m;
+    }
+    ```
 

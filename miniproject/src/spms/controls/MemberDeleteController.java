@@ -1,24 +1,30 @@
 package spms.controls;
 
-import spms.dao.MemberDao;
-import spms.vo.Member;
+import spms.bind.DataBinding;
+import spms.dao.PostgresSqlMemberDao;
 
 import java.util.Map;
 
-public class MemberDeleteController implements Controller {
+public class MemberDeleteController implements Controller, DataBinding {
 
-  MemberDao memberDao;
+  PostgresSqlMemberDao memberDao;
 
-  public MemberDeleteController setMemberDao(MemberDao memberDao) {
+  public MemberDeleteController setMemberDao(PostgresSqlMemberDao memberDao) {
     this.memberDao = memberDao;
     return this;
   }
 
   @Override
   public String execute(Map<String, Object> model) throws Exception {
-    MemberDao memberDao = (MemberDao) model.get("memberDao");
     memberDao.delete(Integer.parseInt(String.valueOf(model.get("no"))));
     return "redirect:list.do";
+  }
+
+  @Override
+  public Object[] getDataBinders() {
+    return new Object[]{
+        "no", Integer.class
+    };
   }
 
 }

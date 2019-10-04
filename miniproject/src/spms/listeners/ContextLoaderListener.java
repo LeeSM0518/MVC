@@ -1,7 +1,7 @@
 package spms.listeners;
 
 import spms.controls.*;
-import spms.dao.MemberDao;
+import spms.dao.PostgresSqlMemberDao;
 
 import javax.naming.InitialContext;
 import javax.servlet.ServletContext;
@@ -22,10 +22,10 @@ public class ContextLoaderListener implements ServletContextListener {
       InitialContext initialContext = new InitialContext();
       DataSource ds = (DataSource) initialContext.lookup("java:comp/env/jdbc/postgresql");
 
-      MemberDao memberDao = new MemberDao();
+//      MemberDao memberDao = new MemberDao();
+      PostgresSqlMemberDao memberDao = new PostgresSqlMemberDao();
       memberDao.setDataSource(ds);
 
-//      sc.setAttribute("memberDao", memberDao);
       sc.setAttribute("/auth/login.do",
           new LogInController().setMemberDao(memberDao));
       sc.setAttribute("/auth/logout.do",

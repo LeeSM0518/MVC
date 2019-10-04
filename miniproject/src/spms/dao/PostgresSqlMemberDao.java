@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PostgresSqlDao {
+public class PostgresSqlMemberDao implements MemberDao {
 
   private DataSource ds;
 
