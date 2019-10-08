@@ -2,7 +2,9 @@ package spms.servlets;
 
 import spms.bind.DataBinding;
 import spms.bind.ServletRequestDataBinder;
+import spms.context.ApplicationContext;
 import spms.controls.*;
+import spms.listeners.ContextLoaderListener;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -24,38 +26,18 @@ public class DispatcherServlet extends HttpServlet {
     String servletPath = req.getServletPath();
 
     try {
-      ServletContext sc = this.getServletContext();
+//      ServletContext sc = this.getServletContext();
+      ApplicationContext ctx = ContextLoaderListener.getApplicationContext();
 
       HashMap<String, Object> model = new HashMap<>();
       model.put("session", req.getSession());
 
-      Controller pageController = (Controller) sc.getAttribute(servletPath);
+//      Controller pageController = (Controller) sc.getAttribute(servletPath);
+      Controller pageController = (Controller) ctx.getBean(servletPath);
 
-//      if ("/member/add.do".equals(servletPath)) {
-//        if (req.getParameter("email") != null) {
-//          model.put("member", new Member()
-//              .setEmail(req.getParameter("email"))
-//              .setPassword(req.getParameter("password"))
-//              .setName(req.getParameter("name")));
-//        }
-//      } else if ("/member/update.do".equals(servletPath)) {
-//        if (req.getParameter("email") != null) {
-//          model.put("member", new Member()
-//              .setNo(Integer.parseInt(req.getParameter("no")))
-//              .setEmail(req.getParameter("email"))
-//              .setName(req.getParameter("name")));
-//        } else {
-//          model.put("no", req.getParameter("no"));
-//        }
-//      } else if ("/member/delete.do".equals(servletPath)) {
-//        model.put("no", req.getParameter("no"));
-//      } else if ("/auth/login.do".equals(servletPath)) {
-//        if (req.getParameter("email") != null) {
-//          model.put("member", new Member()
-//              .setEmail(req.getParameter("email"))
-//              .setPassword(req.getParameter("password")));
-//        }
-//      }
+      if (pageController == null) {
+        throw new Exception("요청한 서비스를 찾을 수 없습니다.");
+      }
 
       if (pageController instanceof DataBinding) {
         prepareRequestData(req, model, (DataBinding)pageController);

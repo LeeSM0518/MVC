@@ -2098,3 +2098,797 @@ public class ServletRequestDataBinder {
 
 ## 6.4.6. 리플랙션 API
 
+리플랙션 API는 **클래스나 메서드의 내부 구조를 들여다 볼 때 사용하는 도구이다.**
+
+- **이번 절에 사용한 리플랙션 API**
+
+  | 메서드                     | 설명                                                    |
+  | -------------------------- | ------------------------------------------------------- |
+  | Class.newInstance          | 주어진 클래스의 인스턴스를 생성                         |
+  | Class.getName()            | 클래스의 이름을 반환                                    |
+  | Class.getMethods()         | 클래스에 선언된 모든 public 메서드의 목록을 배열로 반환 |
+  | Method.invoke              | 해당 메서드를 호출                                      |
+  | Method.getParameterTypes() | 메서드의 매개변수 목록을 배열로 반환                    |
+
+<br>
+
+# 6.5. 프로퍼티를 이용한 객체 관리
+
+페이지 컨트롤러를 추가하면 ContextLoaderListener를 변경해야 했다.
+
+- **ContextLoaderListener에서 페이지 컨트롤러를 생성하는 코드**
+
+  ```java
+  public void contextInitialized(ServletContextEvent event) {
+    try {
+      ...
+      PostgresSqlMemberDao memberDao = new PostgresSqlMemberDao();
+      memberDao.setDataSource(ds);
+      
+      sc.setAttribute("/auth/login.do",
+                     new LogInController().setMemberDao(memberDao));
+      sc.setAttribute("/auth/logout.do", new LogOutController());
+      sc.setAttribute("/member/list.do",
+                     new MemberListController().setMemberDao(memberDao));
+      sc.setAttribute("/member/add.do",
+                     new MemberAddController().setMemberDao(memberDao));
+      sc.setAttribute("/member/update.do",
+                     new MemberUpdateController().setMemberDao(memberDao));
+      sc.setAttribute("/member/delete.do",
+                     new MemberDeleteController().setMemberDao(memberDao));
+    } catch (Throwable e){
+      ...
+  ```
+
+  - 페이지 컨트롤러뿐만 아니라 DAO를 추가하는 경우에도 ContextLoaderListener 클래스에 코드를 추가해야 한다.
+  - **객체를 생성하고 의존 객체를 주입하는 부분을 자동화 해보자.**
+
+<br>
+
+## 6.5.1. 실습 시나리오
+
+웹 애플리케이션을 시작할 때 생성해야 할 객체가 있다면 **프로퍼티 파일(application-context.properties)에** 기록한다.
+
+ContextLoaderListener는 이 **프로퍼티 파일의 정보를 읽고 객체를 생성한다.**
+
+- **프로퍼티 파일을 이용한 객체 자동 생성 시나리오**
+
+  <img src="../capture/스크린샷 2019-10-07 오후 4.26.19.png">
+
+  1. 웹 애플리케이션이 시작되면 서블릿 컨테이너는 **ContextLoaderListener의 contextInitialized() 메서드 호출**
+  2. contextInitialized() 메서드에서는 **ApplicationContext를 생성.** 이때 생성자에 프로퍼티 파일의 경로를 매개변수로 넘겨준다.
+  3. **ApplicationContext는 프로퍼티 파일의 내용을 읽어들인다.**
+  4. 프로퍼티 파일에 선언된 대로 **객체를 생성하여 객체 테이블에 저장한다.**
+  5. 객체 테이블에 저장된 각 객체에 대해 **의존 객체를 찾아서 할당해 준다.**
+
+<br>
+
+## 6.5.2. 프로퍼티 파일 작성
+
+생성할 객체에 대한 정보를 담고 있는 프로퍼티 파일을 만들어보자.
+
+<br>
+
+### *web/WEB-INF 폴더에 application-context.properties 파일을 생성 후 편집*
+
+- web/WEB-INF/application-context.properties
+
+  ```properties
+  jndi.dataSource=java:comp/env/jdbc/postgresql
+  memberDao=spms.dao.PostgresSqlMemberDao
+  /auth/login.do=spms.controls.LogInController
+  /auth/logout.do=spms.controls.LogOutController
+  /member/list.do=spms.controls.MemberListController
+  /member/add.do=spms.controls.MemberAddController
+  /member/update.do=spms.controls.MemberUpdateController
+  /member/delete.do=spms.controls.MemberDeleteController
+  ```
+
+  - 이 파일은 ApplicationContext에서 객체를 준비할 때 사용한다.
+
+<br>
+
+객체의 종류에 따라 준비하는 방법이 다르므로 몇 가지 작성 규칙을 정의하였다. 물론 이 규칙은 우리가 만드는 미니 프레임워크에만 해당한다.
+
+<br>
+
+## 톰캣 서버에서 제공하는 객체
+
+DataSource 처럼 톰캣 서버에서 제공하는 객체는 ApplicationContext에서 생성할 수 없다. 대신 **InitialContext를 통해 해당 객체를 얻어야 한다.** 다음은 이런 종류의 객체를 설정하는 규칙
+
+```properties
+jndi.{객체이름}={JNDI이름}
+```
+
+<br>
+
+프로퍼티 **키(key)는 'jndi.' 와 객체 이름을 결합하여 작성한다.** 프로퍼티의 **값(value)은 톰캣 서버에 등록된 객체의 JNDI 이름이다.**
+
+```properties
+jndi.dataSource=java:comp/env/jdbc/studydb
+```
+
+- 이 DataSource는 MemberDao에 할당된다.
+
+<br>
+
+## 일반 객체
+
+MemberDao와 같은 일반 객체 선언 규칙
+
+```properties
+{객체이름}={패키지 이름을 포함한 클래스 이름}
+```
+
+<br>
+
+프로퍼티의 키는 객체를 알아보는 데 도움이 되는 이름을 사용한다. 중복되어서는 안된다. 프로퍼티의 값은 패키지 이름을 포함한 전체 클래스 이름이어야 한다.
+
+```properties
+memberDao=spms.dao.PostgresSqlMemberDao
+```
+
+<br>
+
+## 페이지 컨트롤러 객체
+
+페이지 컨트롤러는 프런트 컨트롤러에서 찾기 쉽도록 다음의 규칙으로 작성한다.
+
+```properties
+{서블릿 URL}={패키지 이름을 포함한 클래스 이름}
+```
+
+<br>
+
+프로퍼티의 키는 서블릿 URL이다.
+
+```properties
+/auth/login.do=spms.controls.LogInController
+```
+
+<br>
+
+## 6.5.3. ApplicationContext 클래스
+
+- **spms/context/ApplicationContext.java**
+
+  ```java
+  public class ApplicationContext {
+  
+    Hashtable<String, Object> objTable = new Hashtable<>();
+  
+    public Object getBean(String key) {
+      return objTable.get(key);
+    }
+  
+    public ApplicationContext(String propertiesPath) throws Exception {
+      Properties props = new Properties();
+      props.load(new FileReader(propertiesPath));
+  
+      prepareObject(props);
+      injectDependency();
+    }
+  
+    private void prepareObject(Properties props) throws Exception {
+      Context ctx = new InitialContext();
+      String key;
+      String value;
+  
+      for (Object item : props.keySet()) {
+        key = (String)item;
+        value = props.getProperty(key);
+        if (key.startsWith("jndi.")) {
+          objTable.put(key, ctx.lookup(value));
+        } else {
+          objTable.put(key, Class.forName(value).newInstance());
+        }
+      }
+    }
+  
+    private void injectDependency() throws Exception {
+      for (String key : objTable.keySet()) {
+        if (!key.startsWith("jndi.")) {
+          callSetter(objTable.get(key));
+        }
+      }
+    }
+  
+    private void callSetter(Object obj) throws Exception {
+      Object dependency;
+      for (Method m : obj.getClass().getMethods()) {
+        if (m.getName().startsWith("set")) {
+          dependency = findObjectByType(m.getParameterTypes()[0]);
+          if (dependency != null) {
+            m.invoke(obj, dependency);
+          }
+        }
+      }
+    }
+  
+    private Object findObjectByType(Class<?> type) {
+      for (Object obj : objTable.values()) {
+        if (type.isInstance(obj)) {
+          return obj;
+        }
+      }
+      return null;
+    }
+  
+  }
+  ```
+
+<br>
+
+## 객체의 보관
+
+프로퍼티에 설정된 대로 객체를 준비하려면 저장할 보관소가 필요하기 때문에, 해시 테이블을 준비한다. 또한, 해시 테이블에서 객체를 꺼낼(getter) 메서드도 정의한다.
+
+```java
+Hashtable<String, Object> objTable = new Hashtable<String, Object>();
+
+public Object getBean(String key) { ... }
+```
+
+<br>
+
+## 프로퍼티 파일의 로딩
+
+ApplicationContext 생성자가 호출되면 매개변수로 지정된 프로퍼티 파일의 내용을 로딩해야 한다.
+
+```java
+Properties props = new Properties();
+props.load(new FileReader(propertiesPath));
+```
+
+<br>
+
+### *프로퍼티 파일 로딩*
+
+- **Properties는 '이름=값' 형태로 된 파일을 다룰 때 사용하는 클래스이다.**
+  - Properties의 load() 메서드는 FileReader를 통해 읽어들인 프로퍼티 내용을 키-값 형태로 내부 맵에 보관한다.
+
+<br>
+
+### *prepareObjects() 메서드*
+
+프로퍼티 파일의 내용을 로딩한 후, 그에 따른 객체를 만들어주는 메서드.
+
+먼저 JNDI 객체를 찾을 때 사용할 **InitialContext를 준비한다.**
+
+```java
+Context ctx = new InitialContext();
+```
+
+<br>
+
+그 후, 반복문을 통해 프로퍼티에 들어있는 정보를 꺼내서 객체를 생성한다.
+
+```java
+for (Object item : props.keySet()) { ... }
+```
+
+<br>
+
+만약 프로퍼티의 키가 **"jndi."로 시작한다면** 객체를 생성하지 않고, **IntialContext 를 통해 얻는다.**
+
+```java
+if (key.startsWith("jndi.")) {
+  objTable.put(key, ctx.lookup(value));
+}
+```
+
+- InitialContext의 **lookup() 메서드는 JNDI 인터페이스를 통해 톰캣 서버에 등록된 객체를 찾는다.**
+
+<br>
+
+그 밖의 객체는 **Class.forName()을 호출하여** 클래스를 로딩하고, **newInstance()를** 사용하여 인스턴스를 생성한다.
+
+```java
+else {
+  objTable.put(key, Class.forName(value).newInstance());
+}
+```
+
+<br>
+
+### *클래스 로딩과 인스턴스 생성*
+
+<img src="../capture/스크린샷 2019-10-08 오후 3.55.45.png">
+
+이렇게 생성한 객체는 객체 테이블 "objTable" 에 저장된다.
+
+<br>
+
+### *객체 테이블에 인스턴스 저장*
+
+<img src="../capture/스크린샷 2019-10-08 오후 4.16.52.png">
+
+<br>
+
+### *injectDependency() 메서드*
+
+각 객체가 필요로 하는 의존 객체를 할당해주는 메서드이다.
+
+```java
+if (!key.startsWith("jndi.")) {
+  callSetter(objTable.get(key));
+}
+```
+
+- 객체 이름이 "jndi." 로 시작하는 경우 톰캣 서버에서 제공한 객체이므로 의존 객체를 주입해서는 안 된다.
+- 나머지 객체에 대해서는 **셋터 메서드를 호출한다.**
+
+<br>
+
+### *callSetter() 메서드*
+
+매개변수로 주어진 객체에 대해 **셋터 메서드를 찾아서 호출하는 일을** 한다.
+
+```java
+for (Method m : obj.getClass().getMethods()) {
+  if (m.getName().startsWith("set")) {
+```
+
+<br>
+
+셋터 메서드를 찾았으면 셋터 메서드의 **매개변수와 타입이 일치하는 객체를 objTable에서 찾는다.**
+
+```java
+dependency = findObjectByType(m.getParameterTypes()[0]);
+```
+
+<br>
+
+의존 객체를 찾았으면, **셋터 메서드를 호출한다.**
+
+```java
+if (dependency != null) {
+  m.invoke(obj, dependency);
+}
+```
+
+<br>
+
+### *findObjectByType() 메서드*
+
+셋터 메서드를 호출할 때 넘겨줄 의존 객체를 찾는 일을 한다.
+
+objTable에 들어 있는 객체를 모두 뒤진다.
+
+```java
+for (Object obj : objTable.values()) {
+```
+
+<br>
+
+만약 셋터 메서드의 매개변수 타입과 일치하는 객체를 찾았다면 그 객체의 주소를 리턴한다. 
+
+```java
+if (type.isInstance(obj)) {
+  return obj;
+}
+```
+
+- Class의 **isInstance() 메서드는** 주어진 객체가 해당 클래스 또는 인터페이스의 인스턴스인지 검사한다.
+
+<br>
+
+## 6.5.4. ContextLoaderListener 변경
+
+ApplicationContext를 만든 이유는 페이지 컨트롤러나 DAO가 추가되더라도 ContextLoaderListener를 변경하지 않기 위함이다.
+
+- **spms/listeners/ContextLoaderListener.java**
+
+  ```java
+  @WebListener
+  public class ContextLoaderListener implements ServletContextListener {
+  
+    static ApplicationContext applicationContext;
+  
+    public static ApplicationContext getApplicationContext() {
+      return applicationContext;
+    }
+  
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+      try {
+        ServletContext sc = sce.getServletContext();
+        sc.setRequestCharacterEncoding("UTF-8");
+  
+        String propertiesPath = sc.getRealPath(
+            sc.getInitParameter("contextConfigLocation"));
+        applicationContext = new ApplicationContext(propertiesPath);
+  
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+  
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+    }
+  
+  }
+  ```
+
+  - 이제 페이지 컨트롤러나 DAO 등을 추가할 때는 프로퍼티 파일에 그 클래스에 대한 정보를 한 줄 추가하면 자동으로 그 객체가 생성된다.
+
+<br>
+
+### *프로퍼티 파일의 경로*
+
+프로퍼티 파일의 이름과 경로 정보를 web.xml 파일로부터 읽어 오게 처리하였다.
+
+```java
+String propertiesPath = sc.getRealPath(
+  sc.getInitParameter("contextConfigLocation"));
+```
+
+<br>
+
+그리고 ApplicationContext 객체를 생성할 때 생성자의 매개변수로 넘겨준다.
+
+```java
+applicationContext = new ApplicationContext(propertiesPath);
+```
+
+<br>
+
+### *getApplicationContext() 클래스 메서드*
+
+이 메서드는 ContextLoaderListener에서 만든 ApplicationContext 객체를 얻을 때 사용한다.
+
+클래스 이름만으로 호출할 수 있게 static으로 선언 하였다.
+
+```java
+public static ApplicationContext getApplicationContext() {
+  return applicationContext;
+}
+```
+
+<br>
+
+## 6.5.5. web.xml 파일에 프로퍼티 경로 정보 설정
+
+ContextLoaderListener가 프로퍼티 파일을 찾을 수 있도록 web.xml 파일에 프로퍼티에 대한 파일 경로 정보를 설정하자.
+
+- **web/WEB-INF/web.xml**
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+           version="4.0">
+    <display-name>Apache-Axis</display-name>
+  
+    <resource-ref>
+      <res-ref-name>jdbc/postgresql</res-ref-name>
+      <res-type>javax.sql.DataSource</res-type>
+      <res-auth>Container</res-auth>
+    </resource-ref>
+  
+    <!-- properties 파일 경로 정보 추가-->
+    <context-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>/WEB-INF/application-context.properties</param-value>
+    </context-param>
+    ...
+  ```
+
+<br>
+
+## 6.5.6. DispatcherServlet 변경
+
+프런트 컨트롤러를 변경해보자.
+
+**spms/servlets/DispatcherServlet.java**
+
+```java
+@WebServlet("*.do")
+public class DispatcherServlet extends HttpServlet {
+
+  @Override
+  protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    resp.setContentType("text/html; charset=UTF-8");
+    String servletPath = req.getServletPath();
+
+    try {
+      //      ServletContext sc = this.getServletContext();
+      ApplicationContext ctx = ContextLoaderListener.getApplicationContext();
+
+      HashMap<String, Object> model = new HashMap<>();
+      model.put("session", req.getSession());
+
+      //      Controller pageController = (Controller) sc.getAttribute(servletPath);
+      Controller pageController = (Controller) ctx.getBean(servletPath);
+
+      if (pageController == null) {
+        throw new Exception("요청한 서비스를 찾을 수 없습니다.");
+      }
+
+      if (pageController instanceof DataBinding) {
+        prepareRequestData(req, model, (DataBinding)pageController);
+      }
+      ...
+```
+
+- **ApplicationContext를 도입하면서** ServletContext로 부터 객체를 가져오는 작업이 필요없어졌다.
+
+  ```java
+  // ServletContext sc = this.getServletContext();
+  ApplicationContext ctx = ContextLoaderListener.getApplicationContext();
+  ```
+
+- 페이지 컨트롤러를 찾을 때도 ServletContext에서 찾지 않기 때문에 해당 코드를 제거했다.
+
+  ```java
+  // Controller pageController = (Controller) sc.getAttribute(servletPath);
+  Controller pageController = (Controller) ctx.getBean(servletPath);
+  ```
+
+- 만약 페이지 컨트롤러를 찾지 못하면 오류를 발생시킨다.
+
+  ```java
+  if (pageController == null) {
+    throw new Exception("요청한 서비스를 찾을 수 없습니다.");
+  }
+  ```
+
+<br>
+
+# 6.6. 애노테이션을 이용한 객체 관리
+
+**'애노테이션'은** 컴파일이나 배포, 실행할 때 참조할 수 있는 아주 특별한 주석이다. 애노테이션을 사용하면 클래스나 필드, 메서드에 대해 부가 정보를 등록할 수 있다. 
+
+**애노테이션(Annotation)을 사용하여** 프로퍼티 파일에 한 줄 추가해야 하는 번거로움을 없애보자.
+
+<br>
+
+## 6.6.1. 애노테이션 활용
+
+- 애노테이션이 적용된 객체 관리 시나리오
+
+  <img src="../capture/스크린샷 2019-10-08 오후 10.13.24.png">
+
+  1. 웹 애플리케이션이 시작되면 서블릿 컨테이너는 contextInitialized()를 호출한다.
+  2. contextInitialized()는 ApplicationContext를 생성한다. 생성자의 매개변수로 프로퍼티 파일의 경로를 넘긴다.
+  3. ApplicationContext 생성자는 프로퍼티 파일을 로딩하여 내부 맵에 보관한다.
+  4. ApplicationContext는 맵에 저장된 정보를 꺼내 인스턴스를 생성하거나 또는 톰캣 서버에서 객체를 가져온다.
+  5. 또한, 자바 classpath를 뒤져서 애노테이션이 붙은 클래스를 찾는다. 그리고 애노테이션에 지정된 정보에 따라 인스턴스를 생성한다.
+  6. 객체가 모두 준비되었으면, 각 객체에 대해 의존 객체를 찾아서 할당한다.
+
+<br>
+
+## 6.6.2. 애노테이션 정의
+
+### *@Component 애노테이션의 사용 예*
+
+```java
+@Component("memberDao")  // 애노테이션 선언
+class MemberDao {
+  ...
+}
+```
+
+<br>
+
+- **spms/annotation/Component.java**
+
+  ```java
+  package spms.annotation;
+  
+  import java.lang.annotation.Retention;
+  import java.lang.annotation.RetentionPolicy;
+  
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Component {
+    String value() default "";
+  }
+  ```
+
+  - 애노테이션 문법은 인터페이스 문법과 비슷하다. interface 키워드 앞에 @가 붙는다.
+
+    ```java
+    public @interface Component{
+    ```
+
+  - 객체 이름을 저장하는 용도로 사용할 'value'라는 기본 속성을 정의한다.
+
+    ```java
+    String value() default "";
+    ```
+
+    - value 속성의 값을 지정하지 않으면 default로 지정한 값이 할당된다.
+
+<br>
+
+### *애노테이션 유지 정책*
+
+**'애노테이션 유지 정책' 이란** 애노테이션 정보를 언제까지 유지할 것인지 설정하는 문법이다.
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+```
+
+<br>
+
+- **애노테이션 유지 정책**
+
+| 정책                    | 설명                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| RetentionPolicy.SOURCE  | 소스 파일에서만 유지. 즉, 클래스 파일에 애노테이션 정보가 남아 있지 않는다. |
+| RetentionPolicy.CLASS   | 클래스 파일에 기록됨. 즉, 실행 중에서는 클래스에 기록된 애노테이션 값을 꺼낼 수 없음(기본정책) |
+| RetentionPolicy.RUNTIME | 클래스 파일에 기록됨. 즉, 실행 중에 클래스에 기록된 애노테이션 값을 참조할 수 있다. |
+
+> 유지 정책을 지정하지 않으면 기본으로 RetentionPolicy.CLASS
+
+<br>
+
+## 6.6.3. 애노테이션 적용
+
+- **spms/dao/PostgresSqlMemberDao.java**
+
+  ```java
+  @Component("memberDao")
+  public class PostgresSqlMemberDao implements MemberDao {
+  ```
+
+  - ApplicationContext는 인스턴스를 보관할 때 이 객체 이름을 사용한다.
+
+<br>
+
+# 실력 향상 과제
+
+PostgresSqlMemberDao처럼 페이지 컨트롤러에 대해서도 적용하세요.
+
+1. LogInController.java
+
+   ```java
+   @Component("/auth/login.do")
+   public class LogInController implements Controller, DataBinding {
+   ```
+
+   <br>
+
+2. LogOutController.java
+
+   ```java
+   @Component("/auth/logout.do")
+   public class LogOutController implements Controller {
+   ```
+
+   <br>
+
+3. MemberAddController.java
+
+   ```java
+   @Component("/member/add.do")
+   public class MemberAddController implements Controller, DataBinding {
+   ```
+
+   <br>
+
+4. MemberDeleteController.java
+
+   ```java
+   @Component("/member/delete.do")
+   public class MemberDeleteController implements Controller, DataBinding {
+   ```
+
+   <br>
+
+5. MemberUpdateController.java
+
+   ```java
+   @Component("/member/update.do")
+   public class MemberUpdateController implements Controller, DataBinding {
+   ```
+
+   <br>
+
+6. MemberListController.java
+
+   ```java
+   @Component("/member/list.do")
+   public class MemberListController implements Controller {
+   ```
+
+   <br>
+
+## 6.6.4. 프로퍼티 파일 변경
+
+- **web/WEB-INF/application-context.properties**
+
+  ```properties
+  jndi.dataSource=java:comp/env/jdbc/postgresql
+  ```
+
+  - DAO와 페이지 컨트롤러는 애노테이션으로 객체 정보를 관리하기 때문에 프로퍼티 파일에서 제거하였다.
+  - 톰캣 서버가 관리하는 JNDI 객체나 외부 라이브러리에 들어 있는 개체는 프로퍼티 파일에 등록해놔야 한다.
+
+<br>
+
+## 6.6.5. ApplicationContext 변경
+
+- **spms/context/ApplicationContext.java**
+
+  ```java
+  public class ApplicationContext {
+  
+    Hashtable<String, Object> objTable = new Hashtable<>();
+  
+    public Object getBean(String key) {
+      return objTable.get(key);
+    }
+  
+    public ApplicationContext(String propertiesPath) throws Exception {
+      Properties props = new Properties();
+      props.load(new FileReader(propertiesPath));
+  
+      prepareObject(props);
+      prepareAnnotationObjects();
+      injectDependency();
+    }
+  
+    private void prepareAnnotationObjects() throws Exception {
+      Reflections reflector = new Reflections("");
+  
+      Set<Class<?>> list = reflector.getTypesAnnotatedWith(Component.class);
+      String key;
+      for (Class<?> clazz : list) {
+        key = clazz.getAnnotation(Component.class).value();
+        objTable.put(key, clazz.newInstance());
+      }
+    }
+    ...
+  ```
+
+  - 애노테이션이 붙은 클래스를 찾아서 객체를 준비한다.
+
+    ```java
+    prepareAnnotationObjects();
+    ```
+
+<br>
+
+### *prepareAnnotationObjects() 메서드*
+
+이 메서드는 **자바 classpath를 뒤져서 @Component 애노테이션이 붙은 클래스를 찾는다.** 그리고 그 **객체를 생성하여 객체 테이블에 담는 일을 한다.**
+
+이 메소드는 Reflections 오픈 소스를 사용하여 더 쉽게 클래스를 찾거나 클래스의 정보를 추출할 수 있다.
+
+```java
+Reflections reflector = new Reflections("");
+```
+
+<br>
+
+**Reflections 클래스는** 우리가 원하는 클래스를 찾아 주는 도구이다. 생성자에 넘겨 주는 매개변수 값은 클래스를 찾을 때 출발하는 패키지이다.
+
+**빈 문자열을 넘기면 자바 classpath에 있는 모든 패키지를 검색한다.**
+
+Reflections의 **getTypesAnnotatedWith() 메서드를 사용하면 애노테이션이 붙은 클래스들을 찾을 수 있다.** 이 메서드의 **매개변수 값은 애노테이션의 클래스이다.**
+
+```java
+Set<Class<?>> list = reflector.getTypesAnnotatedWith(Component.class);
+```
+
+<br>
+
+**getAnnotation()을 통해 클래스로부터 애노테이션을 추출한다.** value()를 호출하면 속성값을 꺼낼 수 있다.
+
+```java
+key = clazz.getAnnotation(Component.class).value();
+```
+
+<br>
+
+애노테이션을 통해 알아낸 객체 이름(key)으로 인스턴스를 저장한다.
+
+```java
+objTable.put(key, clazz.newInstance());
+```
+
+<br>
+

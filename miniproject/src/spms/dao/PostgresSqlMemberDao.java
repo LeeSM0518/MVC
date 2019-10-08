@@ -1,5 +1,6 @@
 package spms.dao;
 
+import spms.annotation.Component;
 import spms.vo.Member;
 
 import javax.sql.DataSource;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component("memberDao")
 public class PostgresSqlMemberDao implements MemberDao {
 
   private DataSource ds;

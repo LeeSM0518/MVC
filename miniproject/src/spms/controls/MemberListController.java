@@ -1,9 +1,11 @@
 package spms.controls;
 
+import spms.annotation.Component;
 import spms.dao.PostgresSqlMemberDao;
 
 import java.util.Map;
 
+@Component("/member/list.do")
 public class MemberListController implements Controller {
 
   PostgresSqlMemberDao memberDao;

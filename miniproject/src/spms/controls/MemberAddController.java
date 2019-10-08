@@ -1,11 +1,13 @@
 package spms.controls;
 
+import spms.annotation.Component;
 import spms.bind.DataBinding;
 import spms.dao.PostgresSqlMemberDao;
 import spms.vo.Member;
 
 import java.util.Map;
 
+@Component("/member/add.do")
 // DataBinding 인터페이스 구현 선언
 public class MemberAddController implements Controller, DataBinding {
 

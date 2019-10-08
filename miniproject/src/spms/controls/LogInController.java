@@ -1,5 +1,6 @@
 package spms.controls;
 
+import spms.annotation.Component;
 import spms.bind.DataBinding;
 import spms.dao.PostgresSqlMemberDao;
 import spms.vo.Member;
@@ -7,6 +8,7 @@ import spms.vo.Member;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
 
+@Component("/auth/login.do")
 public class LogInController implements Controller, DataBinding {
   PostgresSqlMemberDao memberDao;
 
