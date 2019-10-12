@@ -2892,3 +2892,141 @@ objTable.put(key, clazz.newInstance());
 
 <br>
 
+## 6.6.6. Reflections 라이브러리 준비
+
+# 6.7. 실력 향상 훈련
+
+간단한 프로젝트 관리 시스템을 만들어보자. 로그인, 로그아웃, 회원 등록/조회/변경/삭제를 구현해 보자.
+
+<br>
+
+## 6.7.1. 데이터베이스 모델
+
+### 프로젝트 테이블 생성
+
+```sql
+create table projects (
+  pno serial not null,
+  pname varchar not null,
+  content text not null,
+  sta_date timestamp not null,
+  end_date timestamp not null,
+  state integer not null,
+  cre_date timestamp not null,
+  tags varchar null
+);
+```
+
+- **pno 컬럼에 대해 자동적으로 증가하는 일련번호가 저장될 수 있도록 serial로 지정한다.**
+
+<br>
+
+### 프로젝트 멤버 테이블 생성
+
+```java
+create table prj_membs (
+  pno integer not null,
+  mno integer not null,
+  level integer not null,
+ 	state integer not null,
+  mod_date timestamp not null,
+  PRIMARY KEY (pno, mno)
+);
+```
+
+<br>
+
+### Project 값 객체 준비
+
+```java
+package spms.vo;
+
+import java.util.Date;
+
+public class Project {
+
+  protected int no;
+  protected String title;
+  protected String content;
+  protected String startDate;
+  protected Date endDate;
+  protected int state;
+  protected Date createdDate;
+  protected String tags;
+
+  public int getNo() {
+    return no;
+  }
+
+  public Project setNo(int no) {
+    this.no = no;
+    return this;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public Project setTitle(String title) {
+    this.title = title;
+    return this;
+  }
+
+  public String getContent() {
+    return content;
+  }
+
+  public Project setContent(String content) {
+    this.content = content;
+    return this;
+  }
+
+  public String getStartDate() {
+    return startDate;
+  }
+
+  public Project setStartDate(String startDate) {
+    this.startDate = startDate;
+    return this;
+  }
+
+  public Date getEndDate() {
+    return endDate;
+  }
+
+  public Project setEndDate(Date endDate) {
+    this.endDate = endDate;
+    return this;
+  }
+
+  public int getState() {
+    return state;
+  }
+
+  public Project setState(int state) {
+    this.state = state;
+    return this;
+  }
+
+  public Date getCreatedDate() {
+    return createdDate;
+  }
+
+  public Project setCreatedDate(Date createdDate) {
+    this.createdDate = createdDate;
+    return this;
+  }
+
+  public String getTags() {
+    return tags;
+  }
+
+  public Project setTags(String tags) {
+    this.tags = tags;
+    return this;
+  }
+}
+```
+
+<br>
+
