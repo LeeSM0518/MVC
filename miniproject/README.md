@@ -3030,3 +3030,70 @@ public class Project {
 
 <br>
 
+## 6.7.2. 프로젝트 관리 시스템
+
+- **프로젝트 시나리오**
+
+  <img src="../capture/스크린샷 2019-10-15 오후 5.47.15.png">
+
+  1. 프로젝트 목록을 출력하는 기능 구현
+  2. 프로젝트 등록 기능 구현
+  3. 프로젝트 상세정보 출력 기능 구현
+  4. 프로젝트 삭제를 수행할 기능 구현
+
+<br>
+
+## 6.7.3. 훈련 1 프로젝트 목록 페이지 구현
+
+### 1) DAO 인터페이스 생성
+
+프로젝트 데이터를 처리할 DAO의 인터페이스를 정의
+
+```java
+List<Project> selectList() thorws Exception;
+```
+
+<br>
+
+### 2) DAO 구현체 생성
+
+ProjectDao 인터페이스를 구현한 PostgresSqlProjectDao 클래스를 생성하세요.
+
+- **Project 객체**
+  - 프로젝트 번호(PNO)
+  - 이름(PNAME)
+  - 시작일(STA_DATE)
+  - 종료일(END_DATE)
+  - 상태(STATE)
+- 목록은 최신 등록 순으로 정렬되어야 한다.
+
+<br>
+
+### 3) 페이지 컨트롤러 생성
+
+ProjectListController 클래스를 생성하고, PostgresSqlProjectDao를 사용하여 목록 데이터를 준비한다.
+
+<br>
+
+### 4) JSP 페이지 생성
+
+프로젝트 목록 페이지를 출력하는 'web/project/ProjectList.jsp' 를 작성한다.
+<br>
+
+## 훈련1 결과 소스
+
+| 소스 파일                                    | 설명                                            |
+| -------------------------------------------- | ----------------------------------------------- |
+| src/spms/dao/ProjectDao.java                 | ProjectDao 인터페이스 정의                      |
+| src/spms/dao/PostgresSqlProjectDao.java      | ProjectDao 인터페이스를 구현한 클래스           |
+| src/spms/controls/ProjectListController.java | 프로젝트 목록 페이지를 처리하는 페이지 컨트롤러 |
+| web/project/ProjectList.jsp                  | 프로젝트 목록 페이지를 생성하는 뷰 컴포넌트     |
+
+<br>
+
+### DAO 인터페이스 - ProjectDao
+
+```java
+
+```
+
