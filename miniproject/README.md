@@ -3094,6 +3094,748 @@ ProjectListController 클래스를 생성하고, PostgresSqlProjectDao를 사용
 ### DAO 인터페이스 - ProjectDao
 
 ```java
+package spms.dao;
 
+import spms.vo.Project;
+import java.util.List;
+
+public interface ProjectDao {
+
+  List<Project> selectList() throws Exception;
+
+}
 ```
+
+<br>
+
+### DAO 구현체 - PostgresSqlProjectDao
+
+```java
+package spms.dao;
+
+import spms.annotation.Component;
+import spms.vo.Project;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+
+// 컴포넌트 어노테이션 추가
+@Component("projectDao")
+public class PostgresSqlProjectDao implements ProjectDao {
+
+  private DataSource ds;
+
+  public void setDataSource(DataSource ds) {
+    this.ds = ds;
+  }
+
+  @Override
+  public List<Project> selectList() throws Exception {
+    String query = "select pno, pname, sta_date, end_date, state" +
+        " from projects" +
+        " order by pno desc";
+    try (Connection conn = ds.getConnection();
+         PreparedStatement ps = conn.prepareStatement(query);
+         ResultSet rs = ps.executeQuery()) {
+      ArrayList<Project> projects = new ArrayList<>();
+
+      while (rs.next()) {
+        projects.add(new Project()
+            .setNo(rs.getInt("pno"))
+            .setTitle(rs.getString("pname"))
+            .setStartDate(rs.getDate("sta_date"))
+            .setEndDate(rs.getDate("end_date"))
+            .setState(rs.getInt("state")));
+      }
+      return projects;
+    }
+  }
+}
+```
+
+<br>
+
+### 페이지 컨트롤러 - ProjectListController
+
+```java
+package spms.controls.project;
+
+import spms.annotation.Component;
+import spms.controls.Controller;
+import spms.dao.PostgresSqlProjectDao;
+import spms.dao.ProjectDao;
+
+import java.util.Map;
+
+@Component("/project/list.do")
+public class ProjectListController implements Controller {
+
+  PostgresSqlProjectDao projectDao;
+
+  public ProjectListController setMemberDao(PostgresSqlProjectDao projectDao) {
+    this.projectDao = projectDao;
+    return this;
+  }
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    model.put("projects", projectDao.selectList());
+    return "/project/ProjectList.jsp";
+  }
+
+}
+```
+
+<br>
+
+### 뷰 컴포넌트 - ProjectList.jsp
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>프로젝트 목록</title>
+  </head>
+  <body>
+    <jsp:include page="/Header.jsp"/>
+    <h1>프로젝트 목록</h1>
+    <p><a href="add.do">신규 프로젝트</a></p>
+    <table border="1">
+      <tr>
+        <th>번호</th>
+        <th>제목</th>
+        <th>시작일</th>
+        <th>종료일</th>
+        <th>상태</th>
+        <th></th>
+      </tr>
+      <c:forEach var="project" items="${projects}">
+        <tr>
+          <td>${project.no}</td>
+          <td><a href="update.do?no=${project.no}">${project.title}</a></td>
+          <td>${project.startDate}</td>
+          <td>${project.endDate}</td>
+          <td>${project.state}</td>
+          <td><a href="delete.do?no=${project.no}">[삭제]</a></td>
+        </tr>
+      </c:forEach>
+    </table>
+    <jsp:include page="/Tail.jsp"/>
+  </body>
+</html>
+```
+
+<br>
+
+### 실행 결과
+
+<img src="../capture/스크린샷 2019-10-17 오후 1.08.57.png" width=500>
+
+<br>
+
+## 6.7.4. 훈련 2 프로젝트 등록 구현
+
+### 1) DAO 인터페이스에 등록 메서드 추가
+
+ProjectDao 인터페이스에 프로젝트 데이터 등록할  때 호출할 메서드 선언
+
+```java
+int insert(Project project) thorws Exception;
+```
+
+<br>
+
+### 2) DAO 구현체에 메서드 추가
+
+ProejctDao 인터페으스의 변경에 맞추어 PostgresSqlProjectDao 클래스도 변경한다. insert() 메서드에서는 사용자가 입력한 프로젝트 정보를 PROJECTS 테이블에 삽입한다.
+
+<br>
+
+### 3) 페이지 컨트롤러 생성
+
+ProjectAddController 클래스 생성. GET 요청이 들어오면 **/project/ProjectForm.jsp** 로 보내고, POST 요청이 들어오면 **PostgresSqlProjectDao를 사용하여 프로젝트 데이터를 데이터베이스에 입력 후, '프로젝트 목록' 페이지로 리다이렉트**
+
+<br>
+
+### 4) JSP 페이지 생성
+
+프로젝트 정보를 입력 받을 페이지(web/project/ProjectForm.jsp) 를 작성. 
+
+- 입력 항목의 라벨은 \<label> 태그를 사용해라. 
+- 입력 항목들은 \<ul>과 \<li> 태그를 사용하여 정렬해라.
+
+<br>
+
+## 훈련2 결과 소스
+
+| 소스 파일                                   | 설명                                            |
+| ------------------------------------------- | ----------------------------------------------- |
+| src/spms/dao/ProjectDao.java                | ProjectDao 인터페이스. insert() 메서드 추가 됨. |
+| src/spms/dao/PostgresSqlProjectDao.java     | insert() 메서드의 구현 추가                     |
+| src/spms/controls/ProjectAddController.java | 신규 프로젝트의 등록을 처리하는 페이지 컨트롤러 |
+| web/project/ProjectForm.jsp                 | 프로젝트 등록폼을 생성하는 뷰 컴포넌트          |
+
+<br>
+
+### DAO 인터페이스 - ProjectDao
+
+```java
+package spms.dao;
+
+import spms.vo.Project;
+import java.util.List;
+
+public interface ProjectDao {
+
+  List<Project> selectList() throws Exception;
+  int insert(Project project) throws Exception;
+  
+}
+```
+
+<br>
+
+### DAO 구현체 - PostgresSqlProjectDao
+
+```java
+...
+    @Override
+    public int insert(Project project) throws Exception {
+    String query = "insert into projects"
+      + " (pname, content, sta_date, end_date, state, cre_date, tags)"
+      + " values (?, ?, ?, ?, 0, now(), ?)";
+
+    try (Connection conn = ds.getConnection();
+         PreparedStatement ps = conn.prepareStatement(query)) {
+      ps.setString(1, project.getTitle());
+      ps.setString(2, project.getContent());
+      ps.setDate(3, new java.sql.Date(project.getStartDate().getTime()));
+      ps.setDate(4, new java.sql.Date(project.getEndDate().getTime()));
+      ps.setString(5, project.getTags());
+
+      return ps.executeUpdate();
+    }
+	}
+...
+```
+
+<br>
+
+### 페이지 컨트롤러 - ProjectAddController
+
+```java
+package spms.controls.project;
+
+import spms.annotation.Component;
+import spms.bind.DataBinding;
+import spms.controls.Controller;
+import spms.dao.PostgresSqlProjectDao;
+import spms.vo.Project;
+
+import java.util.Map;
+
+@Component("/project/add.do")
+public class ProjectAddController implements Controller, DataBinding {
+
+  PostgresSqlProjectDao projectDao;
+
+  public ProjectAddController setProjectDao(PostgresSqlProjectDao projectDao) {
+    this.projectDao = projectDao;
+    return this;
+  }
+
+  @Override
+  public Object[] getDataBinders() {
+    return new Object[]{
+        "project", spms.vo.Project.class
+    };
+  }
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    Project project = (Project) model.get("project");
+    if (project.getTitle() == null) {
+      return "/project/ProjectForm.jsp";
+    } else {
+      projectDao.insert(project);
+      return "redirect:list.do";
+    }
+  }
+}
+```
+
+<br>
+
+### 뷰 컴포넌트 - ProjectForm.jsp
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+  <head>
+    <title>프로젝트 등록</title>
+    <style>
+      ul {
+        padding: 0;
+      }
+
+      li {
+        list-style: none;
+      }
+
+      label {
+        float: left;
+        text-align: right;
+        width: 60px;
+      }
+    </style>
+  </head>
+  <body>
+    <jsp:include page="/Header.jsp"/>
+    <h1>프로젝트 등록</h1>
+    <form action="add.do" method="post">
+      <ul>
+        <li>
+          <label for="title">제목</label>
+          <input id="title" type="text" name="title" size="50">
+        </li>
+        <li>
+          <label for="content">내용</label>
+          <textarea id="content" name="content" rows="5" cols="40"></textarea>
+        </li>
+        <li>
+          <label for="sdate">시작일</label>
+          <input id="sdate" type="text" name="startDate" placeholder="예)2013-01-01">
+        </li>
+        <li>
+          <label for="edate">종료일</label>
+          <input id="edate" type="text" name="endDate" placeholder="예)2013-01-01">
+        </li>
+        <li>
+          <label for="tags">태그</label>
+          <input id="tags" type="text" name="tags" placeholder="예)태그1 태그2 태그3" size="50">
+        </li>
+        <input type="submit" value="추가">
+        <input type="reset" value="취소">
+      </ul>
+    </form>
+    <jsp:include page="/Tail.jsp"/>
+  </body>
+</html>
+```
+
+<br>
+
+### 실행 결과
+
+<img src="../capture/스크린샷 2019-10-17 오후 1.23.05.png" width=500>
+
+<br>
+
+## 6.7.5. 훈련 3 프로젝트 변경 구현
+
+### 1) DAO 인터페이스에 변경 메서드 추가
+
+ProjectDao 인터페이스에 프로젝트 데이터를 찾거나 변경할 때 호출할 메서드를 선언한다.
+
+```java
+Project selectOne(int no) throws Exception;
+int update(Project project) throws Exception;
+```
+
+<br>
+
+### 2) DAO 구현체에 메서드 추가
+
+ProjectDao 인터페이스의 변경에 맞추어 PostgresSqlProjectDao 클래스에 메서드를 추가한다.
+
+- **selectOne()** : 프로젝트 번호에 해당하는 데이터를 찾아서 반환한다.
+- **update()** : 기존 프로젝트 정보를 사용자가 입력한 값으로 변경한다.
+
+<br>
+
+### 3) 페이지 컨트롤러 생성
+
+ProjectUpdateController 클래스를 생성한다.
+
+- **GET** : PostgresSqlProjectDao 를 통해 프로젝트 정보를 가져온다.
+- **POST** : 프로젝트 데이터를 변경하고 나서, 다시 프로젝트 변경 폼으로 리다이렉트 한다.
+
+<br>
+
+### 4) JSP 페이지 생성
+
+프로젝트 목록에서 프로젝트 제목을 클릭하면 상세 정보를 출력할 ProjectUpdateForm.jsp 를 생성해라.
+
+<br>
+
+## 훈련 3 결과 소스
+
+| 소스 파일                                      | 설명                                       |
+| ---------------------------------------------- | ------------------------------------------ |
+| src/spms/dao/ProjectDao.java                   | selectOne(), update() 추가                 |
+| src/spms/dao/PostgresSqlProjectDao.java        | selectOne(), update() 메서드 구현          |
+| src/spms/controls/ProjectUpdateController.java | 프로젝트의 변경을 처리하는 페이지 컨트롤러 |
+| web/project/ProjectUpdateForm.jsp              | 프로젝트 변경폼을 생성하는 뷰 컴포넌트     |
+
+<br>
+
+### DAO 인터페이스 - ProjectDao
+
+```java
+package spms.dao;
+
+import spms.vo.Project;
+import java.util.List;
+
+public interface ProjectDao {
+
+  List<Project> selectList() throws Exception;
+  int insert(Project project) throws Exception;
+  Project selectOne(int no) throws Exception;
+  int update(Project project) throws Exception;
+
+}
+```
+
+<br>
+
+### DAO 구현체 - PostgresSqlProjectDao
+
+```java
+...
+  @Override
+  public Project selectOne(int no) throws Exception {
+  String query = "select pno, pname, content, sta_date, end_date, state, cre_date, tags"
+    + " from projects where pno=" + no;
+  try (Connection conn = ds.getConnection();
+       PreparedStatement ps = conn.prepareStatement(query);
+       ResultSet rs = ps.executeQuery()) {
+    if (rs.next()) {
+      return new Project()
+        .setNo(rs.getInt("pno"))
+        .setTitle(rs.getString("pname"))
+        .setContent(rs.getString("content"))
+        .setStartDate(rs.getDate("sta_date"))
+        .setEndDate(rs.getDate("end_date"))
+        .setCreatedDate(rs.getDate("cre_date"))
+        .setTags(rs.getString("tags"));
+    } else {
+      throw new Exception("해당 번호의 프로젝트를 찾을 수 없습니다.");
+    }
+  }
+}
+
+@Override
+public int update(Project project) throws Exception {
+  String query = "update projects set " +
+    " pname=?," +
+    " content=?," +
+    " sta_date=?," +
+    " end_date=?," +
+    " state=?," +
+    " tags=?" +
+    " where pno=?";
+
+  try (Connection conn = ds.getConnection();
+       PreparedStatement ps = conn.prepareStatement(query)) {
+    ps.setString(1, project.getTitle());
+    ps.setString(2, project.getContent());
+    ps.setDate(3, new java.sql.Date(project.getStartDate().getTime()));
+    ps.setDate(4, new java.sql.Date(project.getEndDate().getTime()));
+    ps.setInt(5, project.getState());
+    ps.setString(6, project.getTags());
+    ps.setInt(7, project.getNo());
+
+    return ps.executeUpdate();
+  }
+}
+...
+```
+
+<br>
+
+### 페이지 컨트롤러 - ProjectUpdateController
+
+```java
+package spms.controls.project;
+
+import spms.annotation.Component;
+import spms.bind.DataBinding;
+import spms.controls.Controller;
+import spms.dao.PostgresSqlProjectDao;
+import spms.vo.Project;
+
+import java.util.Map;
+
+@Component("/project/update.do")
+public class ProjectUpdateController implements Controller, DataBinding {
+
+  PostgresSqlProjectDao projectDao;
+
+  public ProjectUpdateController setProjectDao(PostgresSqlProjectDao projectDao) {
+    this.projectDao = projectDao;
+    return this;
+  }
+
+  @Override
+  public Object[] getDataBinders() {
+    return new Object[] {
+        "no", Integer.class,
+        "project", spms.vo.Project.class
+    };
+  }
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    Project project = (Project)model.get("project");
+
+    if (project.getTitle() == null) {
+      Integer no = (Integer)model.get("no");
+      Project detailInfo = projectDao.selectOne(no);
+      model.put("project", detailInfo);
+      return "/project/ProjectUpdateForm.jsp";
+    } else {
+      projectDao.update(project);
+      return "redirect:list.do";
+    }
+  }
+}
+```
+
+<br>
+
+### 뷰 컴포넌트 - ProjectUpdateForm.jsp
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>프로젝트 정보</title>
+    <style>
+      ul {
+        padding: 0;
+      }
+
+      li {
+        list-style: none
+      }
+
+      label {
+        float: left;
+        text-align: right;
+        width: 60px;
+      }
+    </style>
+  </head>
+  <body>
+    <jsp:include page="/Header.jsp"/>
+    <h1>프로젝트 정보</h1>
+    <form action="update.do" method="post">
+      <ul>
+        <li>
+          <label for="no">번호</label>
+          <input id="no" type="text" name="no" size="5" value="${project.no}" readonly>
+        </li>
+        <li>
+          <label for="title">제목</label>
+          <input id="title" type="text" name="title" size="50" value="${project.title}">
+        </li>
+        <li>
+          <label for="content">내용</label>
+          <textarea id="content" name="content" rows="5" cols="40">${project.content}</textarea>
+        </li>
+        <li>
+          <label for="sdate">시작일</label>
+          <input id="sdate" type="text" name="startDate" placeholder="예)2013-01-01"
+                 value="${project.startDate}">
+        </li>
+        <li>
+          <label for="edate">종료일</label>
+          <input id="edate" type="text" name="endDate" placeholder="예)2013-01-01"
+                 value="${project.endDate}">
+        </li>
+        <li>
+          <label for="state">상태</label>
+          <select id="state" name="state">
+            <option value="0" ${project.state == 0 ? "selected" : ""}>준비</option>
+            <option value="1" ${project.state == 1 ? "selected" : ""}>진행</option>
+            <option value="2" ${project.state == 2 ? "selected" : ""}>완료</option>
+            <option value="3" ${project.state == 3 ? "selected" : ""}>취소</option>
+          </select>
+        </li>
+        <li>
+          <label for="tags">태그</label>
+          <input id="tags" type="text" name="tags" placeholder="예)태그1 태그2 태그3" size="50"
+                 value="${project.tags}">
+        </li>
+      </ul>
+      <input type="submit" value="저장">
+      <input type="button" value="삭제"
+             onclick="location.href='delete.do?no=${project.no}';">
+    </form>
+    <jsp:include page="/Tail.jsp"/>
+  </body>
+</html>
+```
+
+<br>
+
+## 6.7.6. 훈련 4 프로젝트 삭제 구현
+
+### 1) DAO 인터페이스에 삭제 메서드 추가
+
+ProjectDao 인터페이스에 프로젝트 데이터를 삭제할 때 호출할 메서드 선언
+
+```java
+int delete(int no) throws Exception;
+```
+
+<br>
+
+### 2) DAO 구현체에 메서드 추가
+
+delete() 메서드는 프로젝트 번호를 매개변수로 받는다. 그리고 프로젝트 번호에 해당하는 데이터를 찾아서 삭제한다.
+
+<br>
+
+### 3) 페이지 컨트롤러 생성
+
+ProjectDeleteController 클래스 생성. 삭제 요청이 들어오면 해당 번호의 프로젝트를 삭제하고 리다이렉트
+
+<br>
+
+### 4) JSP 페이지 생성
+
+프로젝트 데이터를 삭제한 후 프로젝트 목륵으로 리다이렉트 하기 때문에 JSP를 만들지 않는다.
+
+<br>
+
+## 훈련4. 결과 소스
+
+| 소스 파일                                              | 설명                                       |
+| ------------------------------------------------------ | ------------------------------------------ |
+| src/spms/dao/ProjectDao.java                           | ProjectDao 인터페이스에 delete() 추가      |
+| src/spms/dao/PostgresSqlProjectDao.java                | delete() 메서드 구현                       |
+| src/spms/controls/project/ProjectDeleteController.java | 프로젝트의 삭제를 처리하는 페이지 컨트롤러 |
+
+<br>
+
+### DAO 인터페이스 - ProjectDao
+
+```java
+package spms.dao;
+
+import spms.vo.Project;
+import java.util.List;
+
+public interface ProjectDao {
+
+  List<Project> selectList() throws Exception;
+  int insert(Project project) throws Exception;
+  Project selectOne(int no) throws Exception;
+  int update(Project project) throws Exception;
+  int delete(int no) throws Exception;
+
+}
+```
+
+<br>
+
+### DAO 구현체 - PostgresSqlProjectDao
+
+```java
+...
+@Override
+public int delete(int no) throws Exception {
+  String query = "delete from projects where pno=" + no;
+  try (Connection conn = ds.getConnection();
+       PreparedStatement ps = conn.prepareStatement(query)) {
+    return ps.executeUpdate();
+  }
+}
+...
+```
+
+<br>
+
+### 페이지 컨트롤러 - ProjectDeleteController
+
+```java
+package spms.controls.project;
+
+import spms.annotation.Component;
+import spms.bind.DataBinding;
+import spms.controls.Controller;
+import spms.dao.PostgresSqlProjectDao;
+
+import java.util.Map;
+
+@Component("/project/delete.do")
+public class ProjectDeleteController implements Controller, DataBinding {
+
+  PostgresSqlProjectDao projectDao;
+
+  public ProjectDeleteController setProjectDao(PostgresSqlProjectDao projectDao) {
+    this.projectDao = projectDao;
+    return this;
+  }
+
+  @Override
+  public Object[] getDataBinders() {
+    return new Object[] {
+        "no", Integer.class
+    };
+  }
+
+  @Override
+  public String execute(Map<String, Object> model) throws Exception {
+    Integer no = (Integer) model.get("no");
+    projectDao.delete(no);
+    return "redirect:list.do";
+  }
+}
+```
+
+<br>
+
+## 6.7.7. 메뉴의 추가
+
+이제 회원 관리 외에 프로젝트 관리가 추가되었다. 이 기능들 사이로 자유롭게 이동할 수 있도록 화면 상단에 메뉴를 추가해보자.
+
+<br>
+
+**web/Header.jsp**
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<div style="background-color: #00008b; color: #ffffff; height: 20px; padding: 5px;">
+  SPMS(Simple Project Management System)
+  <span style="float: right;">
+    <a style="color: white;"
+       href="<%=request.getContextPath()%>/project/list.do">프로젝트</a>
+    <a style="color: white;"
+       href="<%=request.getContextPath()%>/member/list.do">회원</a>
+    <c:if test="${empty sessionScope.member or empty sessionScope.member.email}">
+      <a style="color: white;" href="<%=request.getContextPath()%>/auth/login.do">로그인</a>
+    </c:if>
+    <c:if test="${!empty sessionScope.member and !empty sessionScope.member.name}">
+      ${sessionScope.member.name}
+      (<a style="color: white;"
+          href="<%=request.getContextPath()%>/auth/logout.do">로그아웃</a>
+    </c:if>
+  </span>
+</div>
+```
+
+**실행 결과**
+
+<img src="../capture/스크린샷 2019-10-17 오후 2.10.50.png" width=500>
 

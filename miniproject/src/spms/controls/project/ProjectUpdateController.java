@@ -4,7 +4,6 @@ import spms.annotation.Component;
 import spms.bind.DataBinding;
 import spms.controls.Controller;
 import spms.dao.PostgresSqlProjectDao;
-import spms.dao.ProjectDao;
 import spms.vo.Project;
 
 import java.util.Map;
