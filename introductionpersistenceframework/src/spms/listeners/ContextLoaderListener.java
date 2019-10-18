@@ -1,10 +1,14 @@
 package spms.listeners;
 
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import spms.context.ApplicationContext;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
+import java.io.InputStream;
 
 @WebListener
 public class ContextLoaderListener implements ServletContextListener {
@@ -18,12 +22,23 @@ public class ContextLoaderListener implements ServletContextListener {
   @Override
   public void contextInitialized(ServletContextEvent sce) {
     try {
+      applicationContext = new ApplicationContext();
+
+      String resource = "spms/dao/mybatis-config.xml";
+      InputStream inputStream = Resources.getResourceAsStream(resource);
+      SqlSessionFactory sqlSessionFactory =
+          new SqlSessionFactoryBuilder().build(inputStream);
+
+      applicationContext.addBean("sqlSessionFactory", sqlSessionFactory);
+
       ServletContext sc = sce.getServletContext();
       sc.setRequestCharacterEncoding("UTF-8");
 
       String propertiesPath = sc.getRealPath(
           sc.getInitParameter("contextConfigLocation"));
-      applicationContext = new ApplicationContext(propertiesPath);
+      applicationContext.prepareObjectsByProperties(propertiesPath);
+      applicationContext.prepareObjectsByAnnotation("");
+      applicationContext.injectDependency();
 
     } catch (Throwable e) {
       e.printStackTrace();
