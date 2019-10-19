@@ -900,7 +900,7 @@ SQL 맵퍼 파일은 XML이기 때문에 **제일 먼저 XML 선언이 온다.**
 
 <br>
 
-### id 속성
+### *id 속성*
 
 SQL 문을 작성할 때 각각의 SQL 문을 구분하기 위해 **id 속성을** 사용한다.
 
@@ -916,7 +916,7 @@ SQL 문을 작성할 때 각각의 SQL 문을 구분하기 위해 **id 속성을
 
 <br>
 
-### resultType 속성
+### *resultType 속성*
 
 SELECT 문을 실행하면 결과가 생성되는데, 이 **결과를 담을 객체를 지정하는 속성이 resultType 이다.** 
 
@@ -945,7 +945,7 @@ resultType의 값으로 그 별명을 사용할 수 있다.
 
 <br>
 
-### 칼럼과 셋터 메서드
+### *칼럼과 셋터 메서드*
 
 mybatis는 SELECT 결과를 저장하고자 **resultType에 선언된 클래스의 인스턴스를 생성한다.** 그리고 **각 칼럼에 대응하는 셋터 메서드를 찾아서 호출해준다.** 이때 셋터 메서드는 대소문자 구분없이 set을 뺀 메서드의 이름과 칼럼 이름이 같으면 된다.
 
@@ -984,3 +984,54 @@ mybatis는 SELECT 결과를 저장하고자 **resultType에 선언된 클래스�
 </resultMap>
 ```
 
+* **\<resultMap> 태그** 
+  * **type** : 칼럼 데이터를 저장할 클래스 이름 또는 클래스의 별명. 위에 서는 spms.vo.Project 클래스를 가리키는 별명으로 project 라 하였다.
+
+<br>
+
+### \<result> 엘리먼트
+
+* **column 속성** : 칼럼 이름을 지정
+* **property 속성** : 객체의 프로퍼티 이름을 지정
+
+```xml
+<result column="PNAME" property="title"/>
+```
+
+> result 태그를 사용하여 PNAME 칼럼 값을 setTitle() 메서드와 연결시킨 예
+
+<br>
+
+### *javaType 속성*
+
+\<result>에서 javaType을 사용하면, **칼럼의 값을 특정 자바 객체로 변환할 수 있다.** 
+
+```xml
+<result column="STA_DATE" property="startDate" javaType="java.sql.Date"/>
+```
+
+> 'STA_DATE' 칼럼에 대해 javaType을 java.sql.Date으로 설정하면 ,칼럼 값을 꺼낼 대 그 객체로 변환한다.
+
+javaType 속성을 지정하지 않는다면, 셋터의 매개변수 타입에 맞추어 칼럼 값이 변환된다.
+
+<br>
+
+### \<id> 엘리먼트
+
+\<id> 태그에서 지정한 프로퍼티는 객체 식별자로 사용된다. 
+
+* SELECT 문을 실행할 때마다 매번 결과 객체를 생성한다면 실행 성능이 나빠질 것이다.
+* 이를 해결하기 위해 SELECT를 통해 생성된 결과 객체들은 **별도의 보관소에 저장(캐싱, caching)** 해두고, 다음 SELECT를 실행할 때 재사용한다.
+* 이때 보관소에 저장된 **객체를 구분하는 값으로 \<id> 에서 지정한 프로퍼티를 사용한다.**
+
+```xml
+<id column="PNO" property="no"/>
+```
+
+<br>
+
+## 7.3.2. mybatis의 SELECT 결과 캐싱
+
+한 번 생성된 객체는 버리지 않고 보관해 두었다가, 다음 SELECT를 실행할 때 재사용한다.
+
+\<resultMap>의 \<id>를 사용하여 식별자로 사용할 
