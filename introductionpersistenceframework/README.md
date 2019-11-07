@@ -1271,3 +1271,122 @@ mybatis 설정 파일의 루트 엘리먼트는 configuration 이다.
 
 <br>
 
+## 개별 프로퍼티 설정
+
+프로퍼티 파일에 정의된 것 외 추가로 프로퍼티를 정의할 수 있다.
+
+```xml
+<properties resource="spms/dao/db.properties">
+  <property name="username" value="test"/>
+  <property name="password" value="testok"/>
+</properties>
+```
+
+<br>
+
+## 프로퍼티 값 참조
+
+프로퍼티 파일에 저장된 값은 **${프로퍼티명}** 형식으로 참조한다.
+
+```xml
+<dataSource type="POOLED">
+  <property name="driver" value="${driver}"/>
+  <property name="url" value="${url}"/>
+  <property name="username" value="${username}"/>
+  <property name="password" value="${password}"/>
+</dataSource>
+```
+
+<br>
+
+## \<typeAliases> 엘리먼트
+
+SQL 맵퍼 파일에서 매개변수 타입(parameterType)이나 결과 타입(resultType)을 지정할 때 긴 이름의 클래스명 대신 짧은 이름의 별명을 사용할 수 있다. **typeAliases 엘리먼트는 SQL 맵퍼 파일에서 사용할 별명들을 설정한다.**
+
+```xml
+<typeAliases>
+  <typeAlias type="spms.vo.Project" alias="project"/>
+  <typeAlias type="spms.vo.Member" alias="member"/>
+</typeAliases>
+```
+
+* **\<typeAlias>**
+  * **type 속성** : 패키지 이름을 포함한 클래스 이름
+  * **alias 속성** : type에서 지정한 클래스의 별명이다.
+
+<br>
+
+## SQL 맵퍼에서 별명 사용
+
+```xml
+<update id="update" parameterType="project">
+  ...
+</update>
+
+<select id="selectList" resultType="project">
+  ...
+</select>
+```
+
+* \<update>의 parameterType과 \<select>의 **resultType에 지정한 "project"는** spms.vo.Project 클래스를 가리키는 별명이다.
+
+<br>
+
+### *mybatis에 미리 정의된 별명들*
+
+mybatis는 기본 데이터 형이나 랩퍼 클래스에 대해 미리 별명을 정의하였다.
+
+| 별명           | 타입                 | 별명         | 타입                 |
+| -------------- | -------------------- | ------------ | -------------------- |
+| _byte          | byte                 | byte         | java.lang.Byte       |
+| _short         | short                | short        | java.lang.Short      |
+| _int, _integer | int                  | int, integer | java.lang.Integer    |
+| _long          | long                 | long         | java.lang.Long       |
+| _float         | float                | float        | java.lang.Float      |
+| _double        | double               | double       | java.lang.Double     |
+| _boolean       | boolean              | boolean      | java.lang.Double     |
+| string         | java.lang.String     | date         | java.util.Date       |
+| decimal        | java.math.BigDecimal | bigdecimal   | java.math.BigDecimal |
+| map            | java.util.Map        | hashmap      | java.util.Hashmap    |
+| list           | java.util.List       | arraylist    | java.util.ArrayList  |
+| collection     | java.util.Collection | iterator     | java.util.iterator   |
+| object         | java.lang.Object     |              |                      |
+
+<br>
+
+## \<environments> 엘리먼트
+
+\<environments> 태그는 데이터베이스 환경 정보를 설정할 때 사용하는 태그이다. 이 태그를 이용하면 여러 개의 데이터베이스 접속 정보를 설정할 수 있다.
+
+```xml
+<environments default="development">
+	<environment id="development"> ... </environment>
+  <environment id="test"> ... </environment>
+  <environment id="real"> ... </environment>
+</environments>
+```
+
+* 설정된 DB 정보 중에서 하나를 선택할 때는 default 속성을 사용한다.
+* **\<environment>** : 각각의 데이터베이스 접속 정보 정의
+  * **id 속성** : \<environment>를 구분할 때 사용할 식별자
+
+<br>
+
+## \<environment> 엘리먼트
+
+environment는 **트랜잭션 관리 및 데이터 소스를** 설정하는 태그이다.
+
+<br>
+
+### *트랜잭션 관리 방식 설정*
+
+**트랜잭션(Transaction)이란,** 여러 개의 데이터 변경 작업(insert, update, delete)을 하나의 작업으로 묶은 것이다.
+
+* **mybatis의 트랜잭션 관리 유형**
+
+  | 트랜잭션 관리 유형 | 설명                                                         |
+  | ------------------ | ------------------------------------------------------------ |
+  | JDBC               | 직접 JDBC의 커밋(commit), 롤백(rollback) 기능을 사용하여 mybatis 자체에서 트랜잭션을 관리 |
+  | MANAGED            | 서버의 트랜잭션 관리 기능을 이용. 즉 Java EE 애플리케이션 서버(JBoss, WebLogic, WebSphere 등)나 서블릿 컨테이너(톰캣 서버 등)에서 트랜잭션을 관리 |
+
+  
