@@ -214,13 +214,13 @@ SqlSession sqlSession = sqlSessionFactory.openSession();
 
 ### *SqlSession의 주요 메서드*
 
-| 메서드       | 설명                                           |
-| ------------ | ---------------------------------------------- |
-| selectList() | SELECT 문을 실행. 값 객체(VO) 목록 반환        |
-| selectOne()  | SELECT 문을 실행. 하나의 값 객체 반환          |
-| insert()     | INSERT 문을 실행. 반환값은 입력한 데이터 개수. |
-| update()     | UPDATE 문을 실행. 반환값은 변경한 데이터 개수  |
-| delete()     | DELETE 문을 실행. 반환값은 삭제한 데이터 개수  |
+| 메서드       | 설명                                          |
+| ------------ | --------------------------------------------- |
+| selectList() | SELECT 문을 실행. 값 객체(VO) 목록 반환       |
+| selectOne()  | SELECT 문을 실행. 하나의 값 객체 반환         |
+| insert()     | INSERT 문을 실행. 반환값은 입력한 데이터 개수 |
+| update()     | UPDATE 문을 실행. 반환값은 변경한 데이터 개수 |
+| delete()     | DELETE 문을 실행. 반환값은 삭제한 데이터 개수 |
 
 <br>
 
@@ -452,11 +452,16 @@ mybatis 도입함에 따라 ApplicationContext를 변경해야 한다. 즉, 별�
   public class ApplicationContext {
   
     Hashtable<String, Object> objTable = new Hashtable<>();
+    
+    // 생성자 제거
+    // 이제는 외부에서 객체를 주입하는 경우도 고려해야 하기 때문에 일괄처리 방식을 개별처리 방식으로
+    // 변경해야 한다.
   
     public Object getBean(String key) {
       return objTable.get(key);
     }
     
+    // 외부에서 생성한 SqlSessionFactory를 등록할 수 있게 메소드 추가
     public void addBean(String name, Object obj) {
       objTable.put(name, obj);
     }
@@ -668,8 +673,8 @@ SqlSessionFactory는 new 연산자로 객체를 생성할 수 없다.
 
   <img src="../capture/스크린샷 2019-10-18 오후 9.46.06.png">
 
-  * 이처럼 복잡한 객체는 전문가를 통해 생성하도록 설계한다. 이런 식의 객체 생성 패턴을 **'빌터 패턴(Builder Pattern)'** 이라 부른다.
-  * SqlSessionFactory 클래스도 이름에서 알 수 있듯이 SqlSession 객체를 만드는 공장 객체이다. 
+  * 이처럼 복잡한 객체는 전문가를 통해 생성하도록 설계한다. 이런 식의 객체 생성 패턴을 **'빌더 패턴(Builder Pattern)'** 이라 부른다.
+  * SqlSessionFactory 클래스도 이름에서 알 수 있듯이 SqlSession 객체를 만드는 공장 객체이다.
   * SqlSessionFactoryBuilder 클래스의 build()를 호출해야만 SqlSessionFactory 객체를 생성할 수 있다.
 
   ```java
@@ -1018,7 +1023,7 @@ javaType 속성을 지정하지 않는다면, 셋터의 매개변수 타입에 �
 
 ### \<id> 엘리먼트
 
-\<id> 태그에서 지정한 프로퍼티는 객체 식별자로 사용된다. 
+\<id> 태그에서 지정한 프로퍼티는 객체 식별자로 사용된다.
 
 * SELECT 문을 실행할 때마다 매번 결과 객체를 생성한다면 실행 성능이 나빠질 것이다.
 * 이를 해결하기 위해 SELECT를 통해 생성된 결과 객체들은 **별도의 보관소에 저장(캐싱, caching)** 해두고, 다음 SELECT를 실행할 때 재사용한다.
@@ -1032,6 +1037,237 @@ javaType 속성을 지정하지 않는다면, 셋터의 매개변수 타입에 �
 
 ## 7.3.2. mybatis의 SELECT 결과 캐싱
 
-한 번 생성된 객체는 버리지 않고 보관해 두었다가, 다음 SELECT를 실행할 때 재사용한다.
+mybatis는 **객체 캐싱을 제공한다.** 즉, 한 번 생성된 객체는 버리지 않고 보관해 두었다가, 다음 SELECT를 실행할 때 재사용한다.
 
-\<resultMap>의 \<id>를 사용하여 식별자로 사용할 
+\<resultMap>의 \<id>를 사용하여 **식별자로 사용할 프로퍼티를 지정하면, 캐싱된 객체를 더욱 빨리 찾을 수 있다.**
+
+<br>
+
+### *mybatis의 객체 캐싱*
+
+<img src="../capture/스크린샷 2019-11-07 오후 9.53.44.png">
+
+* 첫 번째 질의를 수행할 때 생성된 결과 객체는 **풀(pool)에 보관해 둔다.**
+* 두 번째 질의에서는 질의 결과에 대해 새로 객체를 생성하기 전에, **객체 풀에 보관된 객체 중에서 PNO 칼럼의 값(\<id> 속성 값)과 일치하는 객체를 먼저 찾는다.** 있다면 기존 객체를 사용하고 없다면 새로운 객체를 생성한다.
+
+<br>
+
+### *\<select> 태그에 resultMap 적용*
+
+SELECT 결과에 대해 \<resultMap>에 정의된 대로 자바 객체를 생성하고 싶다면, \<select> 의 resultMap 속성에 \<resultMap> id를 지정합니다.
+
+```xml
+<select id="selectList" resultMap="projectResultMap">
+  select PNO, PNAME, STA_DATE, END_DATE, STATE
+  from PROJECTS
+  order by PNO desc
+</select>
+
+<select id="selectOne" parameterType="int" resultMap="projectResultMap">
+  select PNO, PNAME, CONTENT, STA_DATE, END_DATE, STATE, CRE_DATE, TAGS
+  from PROJECTS
+  where PNO=#{value}
+</select>
+```
+
+> resultMap을 사용하기 때문에 SELECT 문의 칼럼에는 더 이상 별명을 붙이지 않는다.
+
+<br>
+
+## 7.3.3. SQL 문의 입력 매개변수 처리
+
+SELECT나 INSERT, UPDATE, DELETE 문에서 입력 매개변수를 사용하는 경우를 살펴보자.
+
+<br>
+
+### *mybatis의 입력 매개변수*
+
+mybatis에서는 입력 매개변수를 **'#{프로퍼티명}'** 으로 표시합니다.
+
+```xml
+<insert id="insert" parameterType="project">
+  insert into PROJECTS(PNAME, CONTENT, STA_DATE, END_DATE, STATE, CRE_DATE, TAGS)
+  values (#{title}, #{content}, #{startDate}, #{endDate}, 0, now(), #{tags})
+</insert>
+```
+
+* '#{프로퍼티명}'이 가리키는 값은 \<insert>의 **parameterType에 지정한 객체의 프로퍼티 값(겟터 메서드의 반환값)이다.**
+
+<br>
+
+### *입력 매개변수에 값 공급*
+
+mybatis에서 입력 매개변수에 값을 공급하는 방법은 SqlSession의 메서드를 호출할 때 값 객체를 전달하는 것이다.
+
+```java
+public int insert(Project project) throws Exception {
+  SqlSession sqlSession = sqlSessionFactory.openSession();
+  try {
+    int count = sqlSession.insert("spms.dao.ProjectDao.insert", project);
+    sqlSession.commit();
+    return count;
+  } finally {
+    sqlSession.close();
+  }
+}
+```
+
+* sqlSession.insert()를 호출하면 **SQL 맵퍼 파일에서** 'spms.dao.ProjectDao.insert' 아이디를 가진 SQL 문을 찾아 실행한다. 
+
+  * **spms.dao.ProjectDao** : SQL 맵퍼 파일의 네임스페이스 이름
+
+    ```xml
+    <mapper namespace="spms.dao.ProjectDao">
+    ```
+
+  * **insert** : SQL 아이디
+
+    ```xml
+    <insert id="insert" parameterType="project">
+    ```
+
+* sqlSession.insert() 의 매개변수에 **project는 입력 매개변수에 값을 공급할 객체이다.**
+
+<br>
+
+### *값을 공급하는 객체가 기본 타입인 경우*
+
+```java
+public int delete(int no) throws Exception {
+  try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+    int count = sqlSession.delete("spms.dao.ProjectDao.delete", no);
+    sqlSession.commit();
+    return count;
+  }
+}
+```
+
+* SqlSession의 delete() 메서드는 두 번째 매개변수에 객체를 요구한다. 하지만 위의 코드에서는 **int 타입인 no를 매개변수로 메서드를 호출하였다.** 그래도 문제는 없다.
+* 자바 컴파일러는 int에 대응하는 랩퍼 객체(Integer)를 생성하여 **no 값을 포장(Auto-boxing)한다.**
+
+<br>
+
+### *입력 매개변수에서 랩퍼 객체 사용*
+
+값 객체가 랩퍼 타입일 때 입력 매개변수의 이름은 어떤 이름을 사용해도 무방하다.
+
+```xml
+<delete id="delete" parameterType="int">
+	delete from PROJECTS
+  where PNO=#{value}
+```
+
+* 'value' 이름을 사용하였지만, #{okok} 라고 해도 상관없다.
+
+<br>
+
+# 7.4. mybatis 설정 파일
+
+mybatis 프레임워크는 **자체 커넥션풀을 구축할 수 있습니다.** 또한 여러 개의 데이터베이스 연결 정보를 설정해 두고 실행 상황(개발, 테스트 , 운영 등)에 따라 **사용할 DB를 지정할 수 있다.** 실행 성능을 높이기 위해 **SELECT 결과를 캐싱해 두기도 하고,** SQL 맵퍼 파일에서 **사용할 값 객체(Value Object)에 대해 별명을 부여할 수 있다.**
+
+* **mybatis 프레임워크의 동작 환경을 설정하는 파일(mybatis-config.xml)**
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE configuration
+  	PUBLIC "~//mybatis.org//DTD Config 3.0//EN"
+  	"http://mybatis.org/dtd/mybatis-3-config.dtd">
+  <configuration>
+    <properties resource="spms/dao/db.properties"/>
+    
+    <typeAlias>
+      <typeAlias type="spms.vo.Project" alias="project"/>
+      <typeAlias type="spms.vo.Member" alias="member"/>
+    </typeAlias>
+    
+    <environments default="development">
+      <environment id="development">
+        <transactionManager type="JDBC"/>
+        <dataSource type="POOLED">
+          <property name="driver" value="${driver}"/>
+          <property name="url" value="${url}"/>
+          <property name="username" value="${username}"/>
+          <property name="password" value="${password}"/>
+        </dataSource>
+      </environment>
+    </environments>
+    
+    <mappers>
+      <mapper resource="spms/dao/PostgresSqlProjectDao.xml"/>
+    </mappers>
+  </configuration>
+  ```
+
+<br>
+
+## XML 선언과 mybatis 설정을 위한 DTD 선언
+
+mybatis 설정 파일은 XML 기술을 사용하여 작성하기 때문에 제일 먼저 **XML 선언과 태그 규칙을 정의한 DTD 선언이 온다.**
+
+```xml
+<? xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+	PUBLIC "~//mybatis.org//DTD Config 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-config.dtd">
+```
+
+<br>
+
+## \<configuration> 루트 엘리먼트
+
+mybatis 설정 파일의 루트 엘리먼트는 configuration 이다.
+
+* **DTD 규칙**
+
+  ```xml
+  <!ELEMENT configuration (properties?, settings?, typeAlias?,
+  	typeHandlers?, objectFactory?, objectWrapperFactory?, plugins?,
+  	environment?, databaseIdProvider?, mappers?)>
+  ```
+
+* **configuration의 주요 자식 엘리먼트들**
+
+  | 엘리먼트     | 용도                                                         |
+  | ------------ | ------------------------------------------------------------ |
+  | properties   | 프로퍼티 파일이 있는 경로 설정.                              |
+  | settings     | 프레임워크의 실행 환경을 설정                                |
+  | typeAliases  | 자바 클래스 이름(패키지 이름 포함)에 대한 별명 설정          |
+  | typeHandlers | 칼럼의 값을 자바 객체로, 자바 객체를 칼럼의 값으로 변환해 주는 클래스를 설정 |
+  | environments | 프레임워크에서 사용할 데이터베이스 정보(트랜잭션 관리자, 데이터 소스)를 설정. |
+  | mappers      | SQL 맵퍼 파일들이 있는 경로 설정                             |
+
+<br>
+
+## \<properties> 엘리먼트
+
+데이터베이스 연결 정보처럼 자주 변경될 수 있는 값은 mybatis 설정 파일에 두지 않고 보통 프로퍼티 파일에 저장한다.
+
+* **프로퍼티 파일 로딩 예시**
+
+  ```xml
+  <properties rosource="spms/dao/db.properties"/>
+  ```
+
+  > 프로퍼티 파일이 클래스 경로(CLASSPATH)에 있다면 **resource 속성 사용**
+
+* **프로퍼티 파일이 클래스 경로가 아닌 다른 경로에 있는 예시**
+
+  ```xml
+  <properties url="file:///c:/conf/db.properties"/>
+  ```
+
+<br>
+
+## 프로퍼티 파일 작성 예
+
+* **db.properties 파일**
+
+  ```properties
+  driver=org.postgresql.Driver
+  url=jdbc:postgresql://arjuna.db.elephantsql.com:5432/
+  username=*******
+  password=*******
+  ```
+
+<br>
+

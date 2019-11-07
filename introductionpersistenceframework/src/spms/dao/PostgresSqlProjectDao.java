@@ -5,11 +5,6 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import spms.annotation.Component;
 import spms.vo.Project;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.List;
 
 @Component("projectDao")
