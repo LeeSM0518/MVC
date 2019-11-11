@@ -1389,4 +1389,926 @@ environment는 **트랜잭션 관리 및 데이터 소스를** 설정하는 태�
   | JDBC               | 직접 JDBC의 커밋(commit), 롤백(rollback) 기능을 사용하여 mybatis 자체에서 트랜잭션을 관리 |
   | MANAGED            | 서버의 트랜잭션 관리 기능을 이용. 즉 Java EE 애플리케이션 서버(JBoss, WebLogic, WebSphere 등)나 서블릿 컨테이너(톰캣 서버 등)에서 트랜잭션을 관리 |
 
+
+## 개별 프로퍼티 설정
+
+프로퍼티 파일에 정의된 것 외 추가로 프로퍼티를 정의할 수 있다.
+
+```xml
+<properties resource="spms/dao/db.properties">
+  <property name="username" value="test"/>
+  <property name="password" value="testok"/>
+</properties>
+```
+
+<br>
+
+## 프로퍼티 값 참조
+
+프로퍼티 파일에 저장된 값은 **${프로퍼티명}** 형식으로 참조한다.
+
+```xml
+<dataSource type="POOLED">
+  <property name="driver" value="${driver}"/>
+  <property name="url" value="${url}"/>
+  <property name="username" value="${username}"/>
+  <property name="password" value="${password}"/>
+</dataSource>
+```
+
+<br>
+
+## \<typeAliases> 엘리먼트
+
+SQL 맵퍼 파일에서 매개변수 타입(parameterType)이나 결과 타입(resultType)을 지정할 때 긴 이름의 클래스명 대신 짧은 이름의 별명을 사용할 수 있다. **typeAliases 엘리먼트는 SQL 맵퍼 파일에서 사용할 별명들을 설정한다.**
+
+```xml
+<typeAliases>
+  <typeAlias type="spms.vo.Project" alias="project"/>
+  <typeAlias type="spms.vo.Member" alias="member"/>
+</typeAliases>
+```
+
+* **\<typeAlias>**
+  * **type 속성** : 패키지 이름을 포함한 클래스 이름
+  * **alias 속성** : type에서 지정한 클래스의 별명이다.
+
+<br>
+
+## SQL 맵퍼에서 별명 사용
+
+```xml
+<update id="update" parameterType="project">
+  ...
+</update>
+
+<select id="selectList" resultType="project">
+  ...
+</select>
+```
+
+* \<update>의 parameterType과 \<select>의 **resultType에 지정한 "project"는** spms.vo.Project 클래스를 가리키는 별명이다.
+
+<br>
+
+### *mybatis에 미리 정의된 별명들*
+
+mybatis는 기본 데이터 형이나 랩퍼 클래스에 대해 미리 별명을 정의하였다.
+
+| 별명           | 타입                 | 별명         | 타입                 |
+| -------------- | -------------------- | ------------ | -------------------- |
+| _byte          | byte                 | byte         | java.lang.Byte       |
+| _short         | short                | short        | java.lang.Short      |
+| _int, _integer | int                  | int, integer | java.lang.Integer    |
+| _long          | long                 | long         | java.lang.Long       |
+| _float         | float                | float        | java.lang.Float      |
+| _double        | double               | double       | java.lang.Double     |
+| _boolean       | boolean              | boolean      | java.lang.Double     |
+| string         | java.lang.String     | date         | java.util.Date       |
+| decimal        | java.math.BigDecimal | bigdecimal   | java.math.BigDecimal |
+| map            | java.util.Map        | hashmap      | java.util.Hashmap    |
+| list           | java.util.List       | arraylist    | java.util.ArrayList  |
+| collection     | java.util.Collection | iterator     | java.util.iterator   |
+| object         | java.lang.Object     |              |                      |
+
+<br>
+
+## \<environments> 엘리먼트
+
+\<environments> 태그는 데이터베이스 환경 정보를 설정할 때 사용하는 태그이다. 이 태그를 이용하면 여러 개의 데이터베이스 접속 정보를 설정할 수 있다.
+
+```xml
+<environments default="development">
+	<environment id="development"> ... </environment>
+  <environment id="test"> ... </environment>
+  <environment id="real"> ... </environment>
+</environments>
+```
+
+* 설정된 DB 정보 중에서 하나를 선택할 때는 default 속성을 사용한다.
+* **\<environment>** : 각각의 데이터베이스 접속 정보 정의
+  * **id 속성** : \<environment>를 구분할 때 사용할 식별자
+
+<br>
+
+## \<environment> 엘리먼트
+
+environment는 **트랜잭션 관리 및 데이터 소스를** 설정하는 태그이다.
+
+<br>
+
+### *트랜잭션 관리 방식 설정*
+
+**트랜잭션(Transaction)이란,** 여러 개의 데이터 변경 작업(insert, update, delete)을 하나의 작업으로 묶은 것이다.
+
+* **mybatis의 트랜잭션 관리 유형**
+
+  | 트랜잭션 관리 유형 | 설명                                                         |
+  | ------------------ | ------------------------------------------------------------ |
+  | JDBC               | 직접 JDBC의 커밋(commit), 롤백(rollback) 기능을 사용하여 mybatis 자체에서 트랜잭션을 관리 |
+  | MANAGED            | 서버의 트랜잭션 관리 기능을 이용. 즉 Java EE 애플리케이션 서버(JBoss, WebLogic, WebSphere 등)나 서블릿 컨테이너(톰캣 서버 등)에서 트랜잭션을 관리 |
+
+<br>
+
+\<transactionManager>를 사용하여 트랜잭션 관리 유형을 설정한다.
+
+```xml
+<transactionManager type="JDBC"/>
+```
+
+* type 속성에 트랜잭션 관리 유형(JDBC또는 MANAGED)을 지정한다.
+
+<br>
+
+## 데이터 소스 설정
+
+* **mybatis의 데이터 소스 유형**
+
+  | 데이터 소스 유형 | 설명                                                         |
+  | ---------------- | ------------------------------------------------------------ |
+  | UNPOOLED         | DB 커넥션을 요청할 때마다 매번 커넥션 객체를 생성한다. 높은 성능을 요구하지 않는 단순한 애플리케이션에 적합하다. |
+  | POOLED           | 미리 DB 커넥션 객체를 생성해 두고, 요청하면 즉시 반환한다. 처리 속도가 빠르다. |
+  | JDNI             | Java EE 애플리케이션이나 서버나 서플릿 컨테이너에서 제공하는 데이터 소스를 사용한다. |
+
+<br>
+
+```xml
+<dataSource type="POOLED">
+  <property name="driver" value="${driver}"/>
+  <property name="url" value="${url}"/>
+  <property name="username" value="${username}"/>
+  <property name="password" value="${password}"/>
+</dataSource>
+```
+
+* 데이터 소스를 설정하려면 \<dataSource> 엘리먼트를 사용해야 한다.
+* \<property>의 value 값을 보면 ${}로 되어 있다. 프로퍼티를 가리키는 문법이다. \<properties>에서 설정한 파일로부터 프로퍼티 값을 가져온다.
+
+<br>
+
+## \<mappers> 엘리먼트
+
+\<mappers> 태그는 SQL 맵퍼 파일들의 정보를 설정할 때 사용한다.
+
+* **클래스 경로를 사용하여 맵퍼 파일을 저장할 경우**
+
+  ```xml
+  <mappers>
+    <mapper resource="spms/dao/MySqlProjectDao.xml"/>
+  </mappers>
+  ```
+
+* **파일 시스템 경로를 사용할 경우**
+
+  ```xml
+  <mappers>
+    <mapper url="file:///c:/dao/MySqlProjectDao.xml"/>
+  </mappers>
+  ```
+
+  > xml 파일이 c:/dao 폴더에 있다고 가정
+
+<br>
+
+## mybatis에서 JDNI 사용하기
+
+* **mybatis-config.xml**
+
+  ```xml
+  <environments default="development">
+    <environment id="development">
+      <transactionManager type="JDBC"/>
+      <dataSource type="JDNI">
+        <property name="data_source" value="java:comp/env/jdbc/postgresql"/>
+      </dataSource>
+    </environment>
+  </environments>
+  ```
+
+  * \<dataSource>의 type 값을 JDNI로 변경한다.
+  * 그 후, data_source의 속성을 'java:comp/env/jdbc/postgresql' 로 지정한다.
+
+* **mybatis에서 DBMS 연결을 관리하지 않기 때문에 db.properties 파일을 참조할 일이 없다.**
+
+  mybatis-config.xml
+
+  ```xml
+  <configuration>
   
+    <!--    <properties resource="spms/dao/db.properties"/>-->
+  
+    <typeAliases>
+      <typeAlias type="spms.vo.Project" alias="project"/>
+      <typeAlias type="spms.vo.Member" alias="member"/>
+    </typeAliases>
+  ```
+
+# 7.5. 로그 출력 켜기
+
+mybatis는 내부 작업을 추적하고 실행 상태를 파악하기 위해 주요 작업마다 로그를 출력한다.
+
+mybatis의 로그 출력 기능을 켜면 mybatis에서 실행하는 **SQL 문과 매개변수 값, 실행 결과를 실시간으로 확인할 수 있다.**
+
+<br>
+
+## 7.5.1. mybatis 설정 파일에 로그 설정 추가
+
+mybatis의 로그 출력 기능을 켜려면 설정 파일에 그 내용을 추가해야 한다.
+
+* **mybatis-config.xml**
+
+  ```xml
+  <configuration>
+  
+    <settings>
+      <setting name="logImpl" value="LOG4J"/>
+    </settings>
+  
+    <typeAliases>
+      <typeAlias type="spms.vo.Project" alias="project"/>
+      <typeAlias type="spms.vo.Member" alias="member"/>
+    </typeAliases>
+    ...
+  ```
+
+  * **\<setting> 태그를** 사용하여 로그 출력기를 지정한다. mybatis는 여기에서 지정한 도구를 사용하여 로그를 출력한다.
+
+  <br>
+
+  ```xml
+  <setting name="logImpl" value="LOG4J"/>
+  ```
+
+  * **logImpl** : 로그 출력기를 설정할 때 name 속성
+  * **LOG4J** : 로그 출력기 이름
+
+<br>
+
+### 로그 출력 구현체
+
+LOG4J 외에 value에 넣을 수 있는 값들
+
+| value 속성값            | 설명                                             |
+| ----------------------- | ------------------------------------------------ |
+| SLF4J                   | SLF4J                                            |
+| LOG4J                   | Log4j                                            |
+| LOG4J2                  | Log4j 2                                          |
+| JDK_LOGGING             | JDK logging                                      |
+| COMMONS_LOGGING         | Apache Commons Logging                           |
+| STDOUT_LOGGING          | 표준 출력 장치로 출력                            |
+| NO_LOGGING              | 로그 출력 기능 사용 안 함                        |
+| 클래스명(패키지명 포함) | org.apache.ibatis.logging.Log 인터페이스 구현체. |
+
+<br>
+
+## Log4J 라이브러리 파일 준비
+
+<img src="../capture/스크린샷 2019-11-11 오후 3.31.08.png" width=500>
+
+* lib 폴더에 log4j-x.x.x.jar 파일이 있는지 확인한다.
+
+<br>
+
+## Log4J 설정 파일 작성
+
+이 파일에는 **로그의 수준, 출력 방식, 출력 형식, 로그 대상** 등에 대한 정보가 들어간다.
+
+이 파일은 자바 클래스 경로(CLASSPATH)에 두어야 한다.
+
+* **src/log4j.properties**
+
+  ```properties
+  log4j.rootLogger=ERROR, stdout
+  
+  log4j.logger.spms.dao=DEBUG
+  
+  log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+  log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+  log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
+  ```
+
+<br>
+
+### *로그의 출력 등급 설정*
+
+```properties
+log4j.rootLogger=ERROR, stdout
+```
+
+* 루트 로거의 출력 등급(Level)을 ERROR로 설정한다.
+  * **루트 로거(rootLogger)** : 최상위 로거
+  * 하위 로거들은 항상 부모의 출력 등급을 상속받는다.
+  * 하위 로거들의 등급을 별도로 설정하지 않으면 출력 등급과 같은 ERROR가 된다.
+
+<br>
+
+**출력 등급에 대한 상속 관계**
+
+* **rootLogger=ERROR**
+  * spms = **ERROR** (상속 받음)
+  * spms.controls = **INFO**
+    * spms.controls.project = **INFO** (상속 받음)
+  * spms.util = **ERROR** (상속 받음)
+  * spms.dao = **DEBUG**
+
+<br>
+
+**로그 출력 등급표**
+
+| 로그 출력 등급 | 설명                                                        |
+| -------------- | ----------------------------------------------------------- |
+| FATAL          | 애플리케이션을 중지해야 할 심각한 오류                      |
+| ERROR          | 오류가 발생했지만, 애플리케이션은 계속 실행할 수 있는 상태  |
+| WARN           | 잠재적인 위험을 안고 있는 상태                              |
+| INFO           | 애플리케이션의 주요 실행 정보                               |
+| DEBUG          | 애플리케이션의 내부 실행 상황을 추적해 볼 수 있는 상세 정보 |
+| TRACE          | 디버그보다 더 상세한 정보                                   |
+
+* 로그 출력 등급표에서 **아래의 등급은 위의 등급을 포함한다.**
+
+<br>
+
+### *출력 담당자 선언*
+
+```properties
+log4j.rootLogger=ERROR, stdout
+```
+
+* **stdout** : 출력 담당자
+* 출력 담당자가 여럿일 때 담당자의 이름도 그 수만큼 지정한다.
+
+<br>
+
+### *출력 담당자의 유형을 결정*
+
+로그를 어디로 출력할지 설정한다. 기본 출력 장치인 모니터로 출력할 수 있고, 파일로 출력할 수 있다. 또한 네트워크를 이용하여 원격의 서버로 출력할 수 있다.
+
+* **설정 문법**
+
+  ```properties
+  log4j.appender.이름=출력 담당자(패키지명 포함한 클래스명)
+  ```
+
+<br>
+
+**주요 로그 출력자 클래스들**
+
+| 출력 담당자 클래스                  | 설명                                                         |
+| ----------------------------------- | ------------------------------------------------------------ |
+| org.apache.log4j.ConsoleAppender    | System.out 또는 System.err 로 로그를 출력한다.               |
+| org.apache.log4j.FileAppender       | 파일로 로그를 출력한다.                                      |
+| org.apache.log4j.net.SocketAppender | 원격의 로그 서버에 로그 정보를 담은 LoggingEvent 객체를 보낸다. |
+
+<br>
+
+### *로그의 출력 형식 정의*
+
+간단히 문자열을 출력할 수 있고, XML 형식으로 출력할 수 있다. 또는 HTML 테이블 형식이나 특정 패턴을 가진 문자열을 출력할 수 있다.
+
+* **문법**
+
+  ```properties
+  log4j.appender.이름.layout=출력형식 클래스(패키지명을 포함한 클래스명)
+  ```
+
+<br>
+
+**출력 형식 클래스**
+
+| 출력 형식 클래스               | 설명                                                         |
+| ------------------------------ | ------------------------------------------------------------ |
+| org.apache.log4j.SimpleLayout  | 출력형식은 '출력 등록 - 메시지' 이다.                        |
+| org.apache.log4j.HTMLLayout    | HTML 테이블 형식으로 출력한다.                               |
+| org.apache.log4j.PatternLayout | 변환 패턴의 형식에 따라 로그를 출력한다.<br />변환 패턴 예)<br />%-5p [%t]: %m%n<br />출력 결과 예)<br />DEBUG [main]: Message 1<br />WARN [main]: Message 2 |
+| org.apache.log4j.xml.XMLLayout | log4j.dtd 규칙에 따라 XML을 만들어 출력한다.                 |
+
+<br>
+
+### *PatternLayout의 패턴 정의*
+
+```properties
+log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
+```
+
+* **%5p** : 로그 출력 등급을 5자리 문자열로 출력
+* **%t** : 스레드 이름 출력
+* **%m** : 로그 내용 출력
+
+<br>
+
+### *특정 패키지의 클래스에 대해 로그의 출력 등급 설정하기*
+
+루트 로거에서 정의한 등급보다 다른 등급의 로그를 출력하고 싶다면, 하위 로거에 대해 별도의 등급을 지정하면 된다.
+
+```properties
+log4j.logger.spms.dao=DEBUG
+```
+
+* **log4j.logger** : 하위 로거를 정의할 때 프로퍼티 이름 앞에 붙이는 접두어
+* **spms.dao** : 패키지 이름
+* **DEBUG** : 패키지에 소속된 클래스에 대해 로그 출력 등급을 DEBUG로 설정
+
+<br>
+
+## 7.5.2. 로그 출력 테스트
+
+* **이클립스 콘솔창에 출력된 로그의 일부분**
+
+  * /project/list.do 
+
+    ```
+    DEBUG [http-nio-8080-exec-9] - ==>  Preparing: select PNO, PNAME, STA_DATE, END_DATE, STATE from PROJECTS order by PNO desc 
+    DEBUG [http-nio-8080-exec-9] - ==> Parameters: 
+    DEBUG [http-nio-8080-exec-9] - <==      Total: 1
+    ```
+
+  * /project/update.do?no=6
+
+    ```
+    DEBUG [http-nio-8080-exec-2] - ==>  Preparing: select PNO, CONTENT, STA_DATE, END_DATE, STATE, CRE_DATE, TAGS from PROJECTS where PNO=? 
+    DEBUG [http-nio-8080-exec-2] - ==> Parameters: 6(Integer)
+    DEBUG [http-nio-8080-exec-2] - <==      Total: 1
+    ```
+
+<br>
+
+## 로그 출력 등급 'TRACE'
+
+DEBUG 보다 더 자세한 내용을 보고 싶다면 로그 출력 등급을 'TRACE'로 올리면 된다.
+
+* **src/log4j.properties**
+
+  ```properties
+  # 하위 로거의 출력 등급 설정
+  log4j.logger.spms.dao=TRACE
+  ```
+
+* **/project/list.do 실행시 콘솔창**
+
+  ```
+  DEBUG [http-nio-8080-exec-7] - ==>  Preparing: select PNO, PNAME, STA_DATE, END_DATE, STATE from PROJECTS order by PNO desc 
+  DEBUG [http-nio-8080-exec-7] - ==> Parameters: 
+  TRACE [http-nio-8080-exec-7] - <==    Columns: pno, pname, sta_date, end_date, state
+  TRACE [http-nio-8080-exec-7] - <==        Row: 6, ???, 2019-01-01 00:00:00, 2019-02-03 00:00:00, 0
+  DEBUG [http-nio-8080-exec-7] - <==      Total: 1
+  ```
+
+<br>
+
+# 7.6. 동적 SQL의 사용
+
+SQL 문을 변경해야 할 때 동적으로 SQL을 사용해야 한다.
+
+* **src/spms/dao/PostgresSqlProjectDao.xml**
+
+  ```xml
+  <select id="selectList" resultMap="projectResultMap">
+    select PNO, PNAME, STA_DATE, END_DATE, STATE
+    from PROJECTS
+    order by PNO desc
+  </select>
+  ```
+
+  * 만약 프로젝트 제목이나 시작일, 종료일, 상태에 대해서도 정렬하려면 여러 개의 SQL 문을 준비해야 한다.
+  * 이런 경우 mybatis에서 제공하는 **'동적 SQL(dynamic SQL)' 기능을 이용하면 하나의 SQL 문으로 여러 상황에 대처할 수 있다.**
+
+<br>
+
+## 7.6.1. 동적 SQL 엘리먼트
+
+mybatis는 동적 SQL을 위한 엘리먼트를 제공한다. 이 엘리먼트들은 **JSTL 코어 라이브러리에 정의된 태그들과 비슷하다.**
+
+* **동적 SQL을 작성할 때 사용하는 엘리먼트들**
+
+  * **\<if> 태그**
+
+    ```xml
+    <if test="조건">SQL 문</if>
+    ```
+
+    * 이 태그는 어떤 값의 상태를 검사하여 참일 경우에만 SQL 문을 포함하고 싶을 때 사용한다.
+
+  * **\<choose> 태그**
+
+    ```xml
+    <choose>
+      <when test="조건1">SQL 문</when>
+      <when test="조건2">SQL 문</when>
+      <otherwise>SQL 문</otherwise>
+    </choose>
+    ```
+
+    * 이 태그는 검사할 조건이 여러 개일 경우에 사용한다.
+
+  * **\<where> 태그**
+
+    ```xml
+    <where>
+      <if test="조건1">SQL 문</if>
+      <if test="조건2">SQL 문</if>
+    </where>
+    ```
+
+    * 이 태그는 where 절을 반환한다.
+
+  * **\<trim> 태그**
+
+    ```xml
+    <trim prefix="단어" prefixOverride="문자열|문자열">
+      <if test="조건1">SQL 문</if>
+      <if test="조건2">SQL 문</if>
+    </trim>
+    ```
+
+    * 이 태그는 특정 단어로 시작하는 SQL 문을 반환하고 싶을 때 사용한다.
+
+  * **\<set> 태그**
+
+    ```xml
+    <set>
+      <if test="조건1">SQL 문</if>
+      <if test="조건2">SQL 문</if>
+    </set>
+    ```
+
+    * 이 태그는 UPDATE 문의 SET 절을 만들 때 사용한다.
+
+  * **\<foreach> 태그**
+
+    ```xml
+    <foreach
+             item="항목"
+             index="인덱스"
+             collection="목록"
+             open="시작문자열"
+             close="종료문자열"
+             separator="구분자">
+    </foreach>
+    ```
+
+    * 이 태그는 목록의 값을 가지고 SQL 문을 만들 때 사용한다.
+
+  * **\<bind> 태그**
+
+    ```xml
+    <bind name="변수명" value="값"/>
+    ```
+
+    * 이 태그는 변수를 생성할 때 사용한다.
+
+<br>
+
+## \<choose> 엘리먼트의 활용
+
+프로젝트 목록을 정렬하기 위해 \<choose>를 사용하여 동적 SQL을 구성해보자.
+
+* **현재 프로젝트 목록 출력 SELECT 문**
+
+  ```sql
+  select PNO, PNAME, STA_DATE, END_DATE, STATE
+  from PROJECTS
+  order by PNO desc
+  ```
+
+<br>
+
+**프로젝트 목록의 정렬 조건**
+
+| 정렬 조건              | 'orderCond' 매개변수 값 | ORDER BY 절            |
+| ---------------------- | ----------------------- | ---------------------- |
+| 프로젝트 제목 오름차순 | 'TITLE_ASC'             | order by PNAME asc     |
+| 프로젝트 제목 내림차순 | 'TITLE_DESC'            | order by PNAME desc    |
+| 시작일 오름차순        | 'STARTDATE_ASC'         | order by STA_DATE asc  |
+| 시작일 내림차순        | 'STARTDATE_DESC'        | order by STA_DATE desc |
+| 종료일 오름차순        | 'ENDDATE_ASC'           | order by END_DATE asc  |
+| 종료일 내림차순        | 'ENDDATE_DESC'          | order by END_DATE desc |
+| 상태(준비 -> 종료)     | 'STATE_ASC'             | order by STATE asc     |
+| 상태(종료 -> 준비)     | 'STATE_DESC'            | order by STATE desc    |
+
+* **'orderCond'** : mybatis에 넘기는 매개변수이다. 매개변수의 값에 따라 OREDR BY 절이 달라진다.
+
+<br>
+
+프로젝트 목록을 가져오는 SQL 문을 편집해보자.
+
+* **src/spms/dao/PostgresSqlProjectDao.xml**
+
+  ```xml
+  <select id="selectList" parameterType="map" resultMap="projectResultMap">
+    select PNO, PNAME, STA_DATE, END_DATE, STATE
+    from PROJECTS
+    order by
+    <choose>
+      <when test="orderCond == 'TITLE_ASC'">PNAME asc</when>
+      <when test="orderCond == 'TITLE_DESC'">PNAME desc</when>
+      <when test="orderCond == 'STARTDATE_ASC'">STA_DATE asc</when>
+      <when test="orderCond == 'STARTDATE_DESC'">STA_DATE desc</when>
+      <when test="orderCond == 'ENDDATE_ASC'">END_DATE asc</when>
+      <when test="orderCond == 'ENDDATE_DESC'">END_DATE desc</when>
+      <when test="orderCond == 'STATE_ASC'">STATE asc</when>
+      <when test="orderCond == 'STATE_DESC'">STATE desc</when>
+      <when test="orderCond == 'PNO_ASC'">PNO asc</when>
+      <otherwise>PNO desc</otherwise>
+    </choose>
+  </select>
+  ```
+
+  * 매개변수를 받기 위해 \<select> 태그에 **parameterType 속성을 추가했다.** orderCond의 값은 매개변수 객체 **"map"에** 들어 있다.
+
+    ```xml
+    <select id="selectList" parameterType="map" resultMap="projectResultMap">
+    ```
+
+<br>
+
+### *ORDER BY 절에 \<choose> 적용*
+
+매개변수 객체 들어 있는 orderCond 값을 검사하는 \<choose> 태그를 추가한다. \<when> 태그의 조건과 일치하는 경우 \<when>에 정의된 SQL 조각을 반환한다.
+
+```xml
+<choose>
+  <when test="orderCond == 'TITLE_ASC'">PNAME asc</when>
+  <when test="orderCond == 'TITLE_DESC'">PNAME desc</when>
+  ...
+</choose>
+```
+
+<br>
+
+### *test 속성*
+
+test 속성에는 조건을 검사하는 **OGNL 기반 표현식이** 온다. 표현식의 결과가 참인지 거짓인지 검사하여 **참일 경우 \<when> 태그의 내용을 반환한다.**
+
+* **OGNL(Open-Graph Navigation Language)** : 자바 객체의 프로퍼티 값을 좀 더 쉽게 꺼내고 할당하기 쉽도록 만든 표현식 언어이다.
+
+<br>
+
+### *\<otherwise> 엘리먼트*
+
+이 태그는 일치하는 조건이 없을 경우 수행된다.
+
+```xml
+<otherwise>PNO desc</otherwise>
+```
+
+<br>
+
+## 7.6.2. 프로젝트 목록 페이지에 정렬 링크 추가
+
+프로젝트 목록에서 정렬을 바꿀 수 있게 각 칼럼의 헤더에 정렬 링크를 추가해보자.
+
+* **web/project/ProjectList.jsp**
+
+  ```jsp
+  <%--
+    Created by IntelliJ IDEA.
+    User: sangminlee
+      Date: 2019/10/15
+        Time: 11:09 오후
+          To change this template use File | Settings | File Templates.
+          --%>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+  <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>프로젝트 목록</title>
+    </head>
+    <body>
+      <jsp:include page="/Header.jsp"/>
+      <h1>프로젝트 목록</h1>
+      <p><a href="add.do">신규 프로젝트</a></p>
+      <table border="1">
+        <tr>
+          <th><c:choose>
+            <c:when test="${orderCond == 'PNO_ASC'}">
+              <a href="list.do?orderCond=PNO_DESC">번호▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'PNO_DESC'}">
+              <a href="list.do?orderCond=PNO_ASC">번호▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=PNO_ASC">번호</a>
+            </c:otherwise>
+            </c:choose></th>
+          <th><c:choose>
+            <c:when test="${orderCond == 'TITLE_ASC'}">
+              <a href="list.do?orderCond=TITLE_DESC">제목▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'TITLE_DESC'}">
+              <a href="list.do?orderCond=TITLE_ASC">제목▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=TITLE_ASC">제목</a>
+            </c:otherwise>
+            </c:choose></th>
+          <th><c:choose>
+            <c:when test="${orderCond == 'STARTDATE_ASC'}">
+              <a href="list.do?orderCond=STARTDATE_DESC">시작일▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'STARTDATE_DESC'}">
+              <a href="list.do?orderCond=STARTDATE_ASC">시작일▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=STARTDATE_ASC">시작일</a>
+            </c:otherwise>
+            </c:choose></th>
+          <th><c:choose>
+            <c:when test="${orderCond == 'ENDDATE_ASC'}">
+              <a href="list.do?orderCond=ENDDATE_DESC">종료일▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'ENDDATE_DESC'}">
+              <a href="list.do?orderCond=ENDDATE_ASC">종료일▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=ENDDATE_ASC">종료일</a>
+            </c:otherwise>
+            </c:choose></th>
+          <th><c:choose>
+            <c:when test="${orderCond == 'STATE_ASC'}">
+              <a href="list.do?orderCond=STATE_DESC">상태▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'STATE_DESC'}">
+              <a href="list.do?orderCond=STATE_ASC">상태▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?oderCond=STATE_ASC">상태</a>
+            </c:otherwise>
+            </c:choose></th>
+        </tr>
+        <c:forEach var="project" items="${projects}">
+          <tr>
+            <td>${project.no}</td>
+            <td><a href="update.do?no=${project.no}">${project.title}</a></td>
+            <td>${project.startDate}</td>
+            <td>${project.endDate}</td>
+            <td>${project.state}</td>
+            <td><a href="delete.do?no=${project.no}">[삭제]</a></td>
+          </tr>
+        </c:forEach>
+      </table>
+      <jsp:include page="/Tail.jsp"/>
+    </body>
+  </html>
+  ```
+
+<br>
+
+### *이전의 칼럼 헤더*
+
+```jsp
+<tr>
+  <th>번호</th>
+  <th>제목</th>
+  <th>시작일</th>
+  <th>종료일</th>
+  <th>상태</th>
+  <th></th>
+</tr>
+```
+
+<br>
+
+### *정렬 링크가 걸린 칼럼 헤더*
+
+```jsp
+<th><c:choose>
+  <c:when test="${orderCond == 'PNO_ASC'}">
+    <a href="list.do?orderCond=PNO_DESC">번호▲</a>
+  </c:when>
+  <c:when test="${orderCond == 'PNO_DESC'}">
+    <a href="list.do?orderCond=PNO_ASC">번호▼</a>
+  </c:when>
+  <c:otherwise>
+    <a href="list.do?orderCond=PNO_ASC">번호</a>
+  </c:otherwise>
+  </c:choose></th>
+<th><c:choose>
+```
+
+* **TITLE_ASC** : 오름차순 정렬 요청
+* **TITLE_DESC** : 내림차순 정렬 요청
+* 정렬 요청이 없으면 오름차순으로 정렬
+
+<br>
+
+## 7.6.3. 프로젝트 목록 컨트롤러 변경
+
+* **src/spms/controls/project/ProjectListController.java**
+
+  ```java
+  @Component("/project/list.do")
+  public class ProjectListController implements Controller, DataBinding {
+  
+    PostgresSqlProjectDao projectDao;
+  
+    public ProjectListController setMemberDao(PostgresSqlProjectDao projectDao) {
+      this.projectDao = projectDao;
+      return this;
+    }
+  
+    @Override
+    public String execute(Map<String, Object> model) throws Exception {
+      HashMap<String, Object> paramMap = new HashMap<>();
+      paramMap.put("orderCond", model.get("orderCond"));
+      model.put("projects", projectDao.selectList(paramMap));
+      return "/project/ProjectList.jsp";
+    }
+  
+    @Override
+    public Object[] getDataBinders() {
+      return new Object[]{
+          "orderCond", String.class
+      };
+    }
+    
+  }
+  ```
+
+<br>
+
+### *DataBinding의 구현*
+
+클라이언트가 보낸 'orderCond' 값을 받으려면 페이지 컨트롤러는 MVC 구조에 따라 DataBinding 인터페이스를 구현해야 한다.
+
+```java
+public class ProjectListController implements Controller, DataBinding {
+```
+
+<br>
+
+getDataBinders() 메서드에서 받기를 원하는 매개변수 이름과 데이터형을 선언한다.
+
+```java
+public Object[] getDataBinders() {
+  return new Object[] {
+    "orderCond", String.class
+  };
+}
+```
+
+<br>
+
+### *DAO에게 정렬 조건 전달*
+
+전달할 정렬 조건이 필요하기 때문에, excute() 에서 projectDao의 selectList()를 호출하기 전에 **매개변수로 전달할 객체를 먼저 준비한다.** 매개변수 객체에는 SQL 맵퍼에서 사용할 정렬 조건이 들어가야 한다.
+
+```java
+HashMap<String, Object> paramMap = new HashMap<String, Object>();
+paramMap.put("orderCond", model.get("orderCond"));
+model.put("projects", projectDao.selectList(paramMap));
+```
+
+* 'orderCond' 라는 이름으로 정렬 조건을 저장한 뒤, projectDao의 selectList()를 호출할 때 이 매개변수 객체를 전달한다.
+
+<br>
+
+## 7.6.4. ProjectDao 인터페이스 변경
+
+selectList()에서 매개변수 값을 받을 수 있게 인터페이스를 변경해보자.
+
+* **src/spms/dao/projectDao.java**
+
+  ```java
+  public interface ProjectDao {
+  
+    // selectList 메소드에서 HashMap 객체를 매개변수로 받는다.
+    List<Project> selectList(HashMap<String, Object> paramMap) throws Exception;
+    int insert(Project project) throws Exception;
+    Project selectOne(int no) throws Exception;
+    int update(Project project) throws Exception;
+    int delete(int no) throws Exception;  
+  
+  }
+  ```
+
+<br>
+
+### *PostgresSqlProjectDao 클래스 변경*
+
+* **src/spms/dao/PostgresSqlProjectDao.java**
+
+  ```java
+  @Component("projectDao")
+  public class PostgresSqlProjectDao implements ProjectDao {
+  
+    private SqlSessionFactory sqlSessionFactory;
+  
+    public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+      this.sqlSessionFactory = sqlSessionFactory;
+    }
+  
+    @Override
+    public List<Project> selectList(HashMap<String, Object> paramMap) throws Exception {
+      try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+        return sqlSession.selectList("spms.dao.ProjectDao.selectList", paramMap);
+      }
+    }
+  ```
+
+  * selectList()를 호출할 때 넘겨준 매개변수 객체는 SQL 맵퍼에 있는 SQL 문을 실행할 때 사용된다.
+
+<br>
+
+## 7.6.5. \<set> 엘리먼트의 활용
+

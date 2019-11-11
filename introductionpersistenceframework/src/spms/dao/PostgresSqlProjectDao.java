@@ -5,6 +5,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import spms.annotation.Component;
 import spms.vo.Project;
 
+import java.util.HashMap;
 import java.util.List;
 
 @Component("projectDao")
@@ -17,9 +18,9 @@ public class PostgresSqlProjectDao implements ProjectDao {
   }
 
   @Override
-  public List<Project> selectList() throws Exception {
+  public List<Project> selectList(HashMap<String, Object> paramMap) throws Exception {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
-      return sqlSession.selectList("spms.dao.ProjectDao.selectList");
+      return sqlSession.selectList("spms.dao.ProjectDao.selectList", paramMap);
     }
   }
 
