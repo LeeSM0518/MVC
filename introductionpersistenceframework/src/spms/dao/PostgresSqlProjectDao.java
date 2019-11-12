@@ -44,11 +44,15 @@ public class PostgresSqlProjectDao implements ProjectDao {
   @Override
   public int update(Project project) throws Exception {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      // 프로젝트 정보를 가져온다.
       Project original = sqlSession.selectOne("spms.dao.ProjectDao.selectOne",
           project.getNo());
 
+      // update 문에 전달할 map 객체 준비
       Hashtable<String, Object> paramMap = new Hashtable<>();
 
+      // 기존 객체 정보와 매개변수로 받은 객체가
+      // 변경된 값들이 있는지 확인
       if (!project.getTitle().equals(original.getTitle())) {
         paramMap.put("title", project.getTitle());
       }
@@ -68,6 +72,7 @@ public class PostgresSqlProjectDao implements ProjectDao {
         paramMap.put("tags", project.getTags());
       }
 
+      // Map 객체에 저장된 값이 있다면 UPDATE 실행
       if (paramMap.size() > 0) {
         paramMap.put("no", project.getNo());
         int count = sqlSession.update("spms.dao.ProjectDao.update", paramMap);
