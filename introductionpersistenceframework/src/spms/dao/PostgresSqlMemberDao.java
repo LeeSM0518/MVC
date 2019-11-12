@@ -1,5 +1,7 @@
 package spms.dao;
 
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import spms.annotation.Component;
 import spms.vo.Member;
 
@@ -9,126 +11,77 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 
 @Component("memberDao")
 public class PostgresSqlMemberDao implements MemberDao {
 
-  private DataSource ds;
+  SqlSessionFactory sqlSessionFactory;
 
-  public void setDataSource(DataSource ds) {
-    this.ds = ds;
+  public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+    this.sqlSessionFactory = sqlSessionFactory;
   }
 
-  public List<Member> selectList() throws Exception {
-    String query = "select mno, mname, email, cre_date" +
-        " from members" +
-        " order by mno";
-    try (Connection conn = ds.getConnection();
-         PreparedStatement ps = conn.prepareStatement(query);
-         ResultSet rs = ps.executeQuery()) {
-      ArrayList<Member> members = new ArrayList<>();
+  public List<Member> selectList(HashMap<String, Object> paramMap) {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      return sqlSession.selectList("spms.dao.MemberDao.selectList", paramMap);
+    }
+  }
 
-      while (rs.next()) {
-        members.add(new Member()
-            .setNo(rs.getInt("mno"))
-            .setName(rs.getString("mname"))
-            .setEmail(rs.getString("email"))
-            .setCreateDate(rs.getDate("cre_date")));
+  public int insert(Member member) {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      int count = sqlSession.insert("spms.dao.MemberDao.insert", member);
+      sqlSession.commit();
+      return count;
+    }
+  }
+
+  public Member selectOne(int no) {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      return sqlSession.selectOne("spms.dao.MemberDao.selectOne", no);
+    }
+  }
+
+  public int update(Member member) {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      Member original = sqlSession.selectOne("spms.dao.MemberDao.selectOne", member.getNo());
+
+      Hashtable<String, Object> paramMap = new Hashtable<>();
+      if (!member.getName().equals(original.getName()))
+        paramMap.put("name", member.getName());
+      if (!member.getEmail().equals(original.getEmail())) {
+        paramMap.put("email", member.getEmail());
       }
-      return members;
-    }
-  }
+      if (paramMap.size() > 0) {
+        paramMap.put("no", member.getNo());
+        int count = sqlSession.update("spms.dao.MemberDao.update", paramMap);
 
-  public int insert(Member member) throws Exception {
-    int success;
-    String query = "insert into members (email, pwd, mname, cre_date, mod_date) values" +
-        " (?, ?, ?, now(), now())";
-
-    try (Connection conn = ds.getConnection();
-         PreparedStatement ps = conn.prepareStatement(query)) {
-      ps.setString(1, member.getEmail());
-      ps.setString(2, member.getPassword());
-      ps.setString(3, member.getName());
-      success = ps.executeUpdate();
-    }
-
-    return success;
-  }
-
-  public int delete(int no) throws Exception {
-    int success;
-    String query = "delete from members where mno=?";
-
-    try (Connection conn = ds.getConnection();
-         PreparedStatement ps = conn.prepareStatement(query)) {
-      ps.setInt(1, no);
-      success = ps.executeUpdate();
-    }
-
-    return success;
-  }
-
-  public Member selectOne(int no) throws Exception {
-    Member member;
-    String query = "select mno, email, mname, cre_date from members" +
-        " where mno=" + no;
-
-    try (Connection conn = ds.getConnection();
-    PreparedStatement ps = conn.prepareStatement(query);
-    ResultSet rs = ps.executeQuery()) {
-      rs.next();
-      member = new Member()
-          .setNo(no)
-          .setEmail(rs.getString("email"))
-          .setName(rs.getString("mname"))
-          .setCreateDate(rs.getDate("cre_date"));
-    }
-    return member;
-  }
-
-  public int update(Member member) throws Exception {
-    int success = 0;
-    String query = "update members set email=?, mname=?, mod_date=now() where mno=?";
-
-    try (Connection conn = ds.getConnection();
-    PreparedStatement ps = conn.prepareStatement(query)) {
-      ps.setString(1, member.getEmail());
-      ps.setString(2, member.getName());
-      ps.setInt(3, member.getNo());
-      success = ps.executeUpdate();
-    } catch (SQLException e) {
-      System.out.println(e.getSQLState());
-      System.out.println(e.getMessage());
-    }
-    return success;
-  }
-
-  public Member exist(String email, String password) throws Exception {
-    Member member = null;
-    String query = "select mno, mname, cre_date, mod_date from members" +
-        " where email=? and pwd=?";
-
-    try (Connection conn = ds.getConnection();
-         PreparedStatement ps = conn.prepareStatement(query)) {
-      ps.setString(1, email);
-      ps.setString(2, password);
-      ResultSet rs = ps.executeQuery();
-
-      if (rs.next()) {
-        member = new Member()
-            .setName(rs.getString("mname"))
-            .setEmail(email)
-            .setNo(rs.getInt("mno"))
-            .setCreateDate(rs.getDate("cre_date"))
-            .setModifiedDate(rs.getDate("mod_date"))
-            .setPassword(password);
+        sqlSession.commit();
+        return count;
+      } else {
+        return 0;
       }
-    } catch (Exception e) {
-      e.printStackTrace();
     }
+  }
 
-    return member;
+  public int delete(int no) {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession();) {
+      int count = sqlSession.delete("spms.dao.MemberDao.delete", no);
+      sqlSession.commit();
+      return count;
+    }
+  }
+
+  public Member exist(String email, String password) {
+    HashMap<String, String> paramMap = new HashMap<>();
+    paramMap.put("email", email);
+    paramMap.put("password", password);
+
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      return sqlSession.selectOne("spms.dao.MemberDao.exist", paramMap);
+    }
   }
 
 }

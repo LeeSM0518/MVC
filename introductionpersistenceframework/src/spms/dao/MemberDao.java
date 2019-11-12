@@ -2,11 +2,12 @@ package spms.dao;
 
 import spms.vo.Member;
 
+import java.util.HashMap;
 import java.util.List;
 
 public interface MemberDao {
 
-  List<Member> selectList() throws Exception;
+  List<Member> selectList(HashMap<String, Object> paramMap) throws Exception;
   int insert(Member member) throws Exception;
   int delete(int no) throws Exception;
   Member selectOne(int no) throws Exception;

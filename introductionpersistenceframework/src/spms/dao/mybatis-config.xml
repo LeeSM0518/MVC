@@ -25,6 +25,7 @@
 
     <mappers>
         <mapper resource="spms/dao/PostgresSqlProjectDao.xml"/>
+        <mapper resource="spms/dao/PostgresSqlMemberDao.xml"/>
     </mappers>
 
 </configuration>

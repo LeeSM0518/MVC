@@ -2312,3 +2312,475 @@ selectList()에서 매개변수 값을 받을 수 있게 인터페이스를 변�
 
 ## 7.6.5. \<set> 엘리먼트의 활용
 
+프로젝트 정보를 변경하는 기능에 대해서도 동적 SQL을 적용해보자.
+
+* **현재 SQL**
+
+  ```sql
+  update PROJECTS set
+  	PNAME=#{title},
+  	CONTENT=#{content},
+  	STA_DATE=#{startDate},
+  	END_DATE=#{endDate},
+  	STATE=#{state},
+  	TAGS=#{tags}
+  where PNO=#{no}
+  ```
+
+위의 SQL에서 한 개의 칼럼만 변경하는 경우(6가지)에서 모든 컬럼을 변경하는 경우(1가지)까지 계산해 보면 총 63가지가 나오기 때문에, 이것은 개발을 더욱 복잡하게 만든다.
+
+바로 이런 상황일 때 동적 SQL을 사용한다.
+
+<br>
+
+* **src/spms/dao/PostgresSqlProjectDao.xml**
+
+  ```xml
+  <update id="update" parameterType="map">
+    update PROJECTS
+    <set>
+      <if test="title != null">PNAME=#{title},</if>
+      <if test="content != null">CONTENT=#{content},</if>
+      <if test="startDate != null">STA_DATE=#{startDate},</if>
+      <if test="endDate != null">END_DATE=#{endDate},</if>
+      <if test="state != null">STATE=#{state},</if> 
+      <if test="tags != null">TAGS=#{tags}</if>
+    </set> 
+    where PNO=#{no}
+  </update>
+  ```
+
+  * 앞으로 변경할 값을 Map 객체에 담아야 하므로, **parameterType을 map으로 바꾼다.** 
+
+<br>
+
+### *\<set> 엘리먼트*
+
+\<set> 태그는 SET 절을 만든다. **test의 값이 참이면 \<if>의 콘텐츠를 반환한다.**
+
+<br>
+
+## 7.6.6. PostgresSqlProjectDao 클래스 변경
+
+* **src/spms/dao/PostgresSqlProjectDao.java**
+
+  ```java
+  @Override
+  public int update(Project project) throws Exception {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      Project original = sqlSession.selectOne("spms.dao.ProjectDao.selectOne",
+                                              project.getNo());
+  
+      Hashtable<String, Object> paramMap = new Hashtable<>();
+  
+      if (!project.getTitle().equals(original.getTitle())) {
+        paramMap.put("title", project.getTitle());
+      }
+      if (!project.getContent().equals(original.getContent())) {
+        paramMap.put("content", project.getContent());
+      }
+      if (project.getStartDate().compareTo(original.getStartDate()) != 0) {
+        paramMap.put("startDate", project.getStartDate());
+      }
+      if (project.getEndDate().compareTo(original.getEndDate()) != 0) {
+        paramMap.put("endDate", project.getEndDate());
+      }
+      if (project.getState() != original.getState()) {
+        paramMap.put("state", project.getState());
+      }
+      if (!project.getTags().equals(original.getTags())) {
+        paramMap.put("tags", project.getTags());
+      }
+  
+      if (paramMap.size() > 0) {
+        paramMap.put("no", project.getNo());
+        int count = sqlSession.update("spms.dao.ProjectDao.update", paramMap);
+  
+        sqlSession.commit();
+        return count;
+      } else {
+        return 0;
+      }
+    }
+  }
+  ```
+
+  * 먼저 프로젝트 정보를 가져온다.
+
+    ```java
+    Project original = sqlSession.selectOne(
+    	"spms.dao.ProjectDao.selectOne", project.getNo());
+    ```
+
+  * UPDATE 문에 전달할 Map 객체를 준비한다.
+
+    ```java
+    Hashtable<String, Object> paramMap = new Hashtable<String, Object>();
+    ```
+
+  * Map 객체에 저장된 값이 있다면, UPDATE 문을 실행한다. 없다면 0을 반환한다.
+
+    ```java
+    if (paramMap.size() > 0) {
+      paramMap.put("no", project.getNo());
+      int count = sqlSession.update("spms.dao.ProjectDao.update", paramMap);
+      sqlSession.commit();
+      return count;
+    } else {
+      return 0;
+    }
+    ```
+
+<br>
+
+# 7.7. 실력 향상 훈련
+
+## 7.7.1. 훈련. 회원 관리에 mybatis 적용
+
+### 1) PostgresSqlMemberDao 클래스로부터 SQL문 분리
+
+1. spms.dao 패키지에 PostgresSqlMemberDao.xml 파일을 생성한다.
+2. PostgresSqlMemberDao 클래스에서 SQL을 분리하여 SQL 맵퍼 파일에 등록한다.
+   * 이름과 이메일 생성일에 대해 정렬이 가능해야 한다.
+
+* **src/spms/dao/PostgresSqlMemberDao.xml**
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE mapper
+          PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+          "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="spms.dao.MemberDao">
+  
+    <resultMap id="memberResultMap" type="member">
+      <id column="MNO" property="no"/>
+      <result column="MNAME" property="name"/>
+      <result column="EMAIL" property="email"/>
+      <result column="PWD" property="password"/>
+      <result column="CRE_DATE" property="createDate" javaType="java.sql.Date"/>
+      <result column="MOD_DATE" property="modifiedDate" javaType="java.sql.Date"/>
+    </resultMap>
+  
+    <select id="selectList" parameterType="map" resultMap="memberResultMap">
+      select MNO, MNAME, EMAIL, CRE_DATE
+      from MEMBERS
+      order by
+      <choose>
+        <when test="orderCond == 'NAME_ASC'">MNAME asc</when>
+        <when test="orderCond == 'NAME_DESC'">MNAME desc</when>
+        <when test="orderCond == 'EMAIL_ASC'">EMAIL asc</when>
+        <when test="orderCond == 'EMAIL_DESC'">EMAIL desc</when>
+        <when test="orderCond == 'CREDATE_ASC'">CRE_DATE asc</when>
+        <when test="orderCond == 'CREDATE_DESC'">CRE_DATE desc</when>
+        <when test="orderCond == 'MNO_ASC'">MNO asc</when>
+        <otherwise>MNO desc</otherwise>
+      </choose>
+    </select>
+  
+    <insert id="insert" parameterType="member">
+      insert into MEMBERS(MNAME, EMAIL, PWD, CRE_DATE, MOD_DATE)
+      values (#{name}, #{email}, #{password}, now(), now())
+    </insert>
+  
+    <select id="selectOne" parameterType="int" resultMap="memberResultMap">
+      select MNO, MNAME, EMAIL, CRE_DATE, MOD_DATE
+      from MEMBERS
+      where MNO=#{value}
+    </select>
+  
+    <update id="update" parameterType="map">
+      update MEMBERS
+      <set>
+        <if test="name != null">MNAME=#{name},</if>
+        <if test="email != null">EMAIL=#{email},</if>
+        MOD_DATE=now()
+      </set>
+      where MNO=#{no}
+    </update>
+  
+    <delete id="delete" parameterType="int">
+      delete from MEMBERS
+      where MNO=#{value}
+    </delete>
+  
+    <select id="exist" parameterType="map" resultMap="memberResultMap">
+      select MNO, MNAME, EMAIL, CRE_DATE, MOD_DATE
+      from MEMBERS
+      where EMAIL=#{email} and PWD=#{password}
+    </select>
+  </mapper>
+  ```
+
+<br>
+
+### 2) MemberDao 변경
+
+정렬 항목에 따라 SELECT 문의 ORDER BY 절이 바뀌어야 한다.
+
+spms.dao.MemberDao 인터페이스에 대해 selectList() 메서드를 다음과 같이 변경한다.
+
+```java
+List<Member> selectList(HashMap<String, Object> paramMap) throws Exception;
+```
+
+* **src/spms/dao/MemberDao.java**
+
+  ```java
+  public interface MemberDao {
+  
+    List<Member> selectList(HashMap<String, Object> paramMap) throws Exception;
+    int insert(Member member) throws Exception;
+    int delete(int no) throws Exception;
+    Member selectOne(int no) throws Exception;
+    int update(Member member) throws Exception;
+    Member exist(String email, String password) throws Exception;
+  
+  }
+  ```
+
+<br>
+
+### 3) PostgresSqlMemberDao에서 SqlSession 객체를 사용하여 데이터 처리
+
+mybatis에서 제공하는 SqlSession 객체를 사용하여 멤버의 등록, 조회, 변경, 삭제를 처리
+
+* **src/spms/dao/PostgresSqlMemberDao.java**
+
+  ```java
+  @Component("memberDao")
+  public class PostgresSqlMemberDao implements MemberDao {
+  
+    SqlSessionFactory sqlSessionFactory;
+  
+    public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+      this.sqlSessionFactory = sqlSessionFactory;
+    }
+  
+    public List<Member> selectList(HashMap<String, Object> paramMap) {
+      try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+        return sqlSession.selectList("spms.dao.MemberDao.selectList", paramMap);
+      }
+    }
+  
+    public int insert(Member member) {
+      try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+        int count = sqlSession.insert("spms.dao.MemberDao.insert", member);
+        sqlSession.commit();
+        return count;
+      }
+    }
+  
+    public Member selectOne(int no) {
+      try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+        return sqlSession.selectOne("spms.dao.MemberDao.selectOne", no);
+      }
+    }
+  
+    public int update(Member member) {
+      try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+        Member original = sqlSession.selectOne("spms.dao.MemberDao.selectOne", member.getNo());
+  
+        Hashtable<String, Object> paramMap = new Hashtable<>();
+        if (!member.getName().equals(original.getName()))
+          paramMap.put("name", member.getName());
+        if (!member.getEmail().equals(original.getEmail())) {
+          paramMap.put("email", member.getEmail());
+        }
+        if (paramMap.size() > 0) {
+          paramMap.put("no", member.getNo());
+          int count = sqlSession.update("spms.dao.MemberDao.update", paramMap);
+  
+          sqlSession.commit();
+          return count;
+        } else {
+          return 0;
+        }
+      }
+    }
+  
+    public int delete(int no) {
+      try (SqlSession sqlSession = sqlSessionFactory.openSession();) {
+        int count = sqlSession.delete("spms.dao.MemberDao.delete", no);
+        sqlSession.commit();
+        return count;
+      }
+    }
+  
+    public Member exist(String email, String password) {
+      HashMap<String, String> paramMap = new HashMap<>();
+      paramMap.put("email", email);
+      paramMap.put("password", password);
+  
+      try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+        return sqlSession.selectOne("spms.dao.MemberDao.exist", paramMap);
+      }
+    }
+  
+  }
+  ```
+
+<br>
+
+### 4) mybatis 설정 파일에 회원 관리 SQL 맵퍼 파일의 경로 추가
+
+src/spms/dao/mybatis-config.xml 파일에 SQL 맵퍼 파일 'PostgresSqlMemberDao.xml' 의 경로 추가
+
+* **src/spms/dao/mybatis-config.xml**
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <!DOCTYPE configuration
+          PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+          "http://mybatis.org/dtd/mybatis-3-config.dtd">
+  <configuration>
+  
+    <!--    <properties resource="spms/dao/db.properties"/>-->
+    <settings>
+      <setting name="logImpl" value="LOG4J"/>
+    </settings>
+  
+    <typeAliases>
+      <typeAlias type="spms.vo.Project" alias="project"/>
+      <typeAlias type="spms.vo.Member" alias="member"/>
+    </typeAliases>
+  
+    <environments default="development">
+      <environment id="development">
+        <transactionManager type="JDBC"/>
+        <dataSource type="JNDI">
+          <property name="data_source" value="java:comp/env/jdbc/postgresql"/>
+        </dataSource>
+      </environment>
+    </environments>
+  
+    <mappers>
+      <mapper resource="spms/dao/PostgresSqlProjectDao.xml"/>  
+      <mapper resource="spms/dao/PostgresSqlMemberDao.xml"/>
+    </mappers>
+  
+  </configuration>
+  ```
+
+<br>
+
+### 5) 회원 목록 컨트롤러 변경
+
+spms.controls.MemberListController 클래스를 정렬 조건을 처리하도록 변경한다.
+
+* **src/spms/controls/MemberListController.java**
+
+  ```java
+  @Component("/member/list.do")
+  public class MemberListController implements Controller, DataBinding {
+  
+    MemberDao memberDao;
+  
+    public MemberListController setMemberDao(MemberDao memberDao) {
+      this.memberDao = memberDao;
+      return this;
+    }
+  
+    @Override
+    public String execute(Map<String, Object> model) throws Exception {
+      HashMap<String, Object> paramMap = new HashMap<>();
+      paramMap.put("orderCond", model.get("orderCond"));
+      model.put("members", memberDao.selectList(paramMap));
+      return "/member/MemberList.jsp";
+    }
+  
+    @Override
+    public Object[] getDataBinders() {
+      return new Object[]{
+        "orderCond", String.class
+          };
+    }
+  }
+  ```
+
+<br>
+
+### 6) 회원 목록 페이지의 JSP 변경
+
+멤버 목록 페이지를 테이블 형태로 출력할 수 있도록 web/member/MemberList.jsp
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>회원 목록</title>
+  </head>
+  <body>
+    <jsp:include page="/Header.jsp"/>
+    <h1>회원 목록</h1>
+    <p><a href="add.do">신규 회원</a></p>
+    <table border="1">
+      <tr>
+        <th>
+          <c:choose>
+            <c:when test="${orderCond == 'MNO_ASC'}">
+              <a href="list.do?orderCond=MNO_DESC">번호▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'MNO_DESC'}">
+              <a href="list.do?orderCond=MNO_ASC">번호▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=MNO_ASC">번호</a>
+            </c:otherwise>
+          </c:choose>
+        </th>
+        <th>
+          <c:choose>
+            <c:when test="${orderCond == 'NAME_ASC'}">
+              <a href="list.do?orderCond=NAME_DESC">이름▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'NAME_DESC'}">
+              <a href="list.do?orderCond=NAME_ASC">이름▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=NAME_ASC">이름</a>
+            </c:otherwise>
+          </c:choose>
+        </th>
+        <th>
+          <c:choose>
+            <c:when test="${orderCond == 'EMAIL_ASC'}">
+              <a href="list.do?orderCond=EMAIL_DESC">이메일▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'EMAIL_DESC'}">
+              <a href="list.do?orderCond=EMAIL_ASC">이메일▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=EMAIL_ASC">이메일</a>
+            </c:otherwise>
+          </c:choose>
+        </th>
+        <th>
+          <c:choose>
+            <c:when test="${orderCond == 'CREDATE_ASC'}">
+              <a href="list.do?orderCond=CREDATE_DESC">등록일▲</a>
+            </c:when>
+            <c:when test="${orderCond == 'CREDATE_DESC'}">
+              <a href="list.do?orderCond=CREDATE_ASC">등록일▼</a>
+            </c:when>
+            <c:otherwise>
+              <a href="list.do?orderCond=CREDATE_ASC">등록일</a>
+            </c:otherwise>
+          </c:choose>
+        </th>
+      </tr>
+      <c:forEach var="member" items="${members}">
+        <tr>
+          <td>${member.no}</td>
+          <td><a href="update.do?no=${member.no}">${member.name}</a></td>
+          <td>${member.email}</td>
+          <td>${member.createDate}</td>
+          <td><a href="delete.do?no=${member.no}">[삭제]</a></td>
+        </tr>
+      </c:forEach>
+    </table>
+    <jsp:include page="/Tail.jsp"/>
+  </body>
+</html>
+```
