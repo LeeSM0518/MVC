@@ -76,7 +76,7 @@ public class ApplicationContext {
       // 객체가 jndi. 로 시작하는 경우 톰갯 서버에서 제공한 객체이므로
       // 의존 객체를 호출하지 안는다.
       if (!key.startsWith("jndi.")) {
-        // 나머지 객체에 대해서는 셋터 메서드를 호
+        // 나머지 객체에 대해서는 셋터 메서드를 호출
         callSetter(objTable.get(key));
       }
     }

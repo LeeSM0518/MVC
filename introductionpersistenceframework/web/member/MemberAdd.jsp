@@ -12,6 +12,7 @@
 </head>
 <body>
 <h1>회원 등록</h1>
+<%-- add.do URL에 post 형식으로 요청--%>
 <form action="add.do" method="post">
     이름: <input type="text" name="name"><br>
     이메일: <input type="text" name="email"><br>

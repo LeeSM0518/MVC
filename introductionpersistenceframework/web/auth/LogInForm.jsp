@@ -14,6 +14,7 @@
 <body>
 <h2>사용자 로그인</h2>
 <%-- URL에 .do 붙임 --%>
+<%-- URL, login.do로 post 요청 --%>
 <form action="login.do" method="post">
     이메일: <input type="text" name="email"><br>
     암호: <input type="password" name="password"><br>
