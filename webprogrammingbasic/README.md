@@ -135,10 +135,9 @@ HTTP 프로토콜 응용 기술 몇 가지를 더 소개하자면 **WebDAV(World
   ```
 
   * **User-Agent** : 헤더 이름
-  * **:**
   * **Mozilla/5.0 (Macint…** : 헤더 값
   * **줄바꿈** : CRLF
-
+  
 * [HTTP 헤더 종류](http://www.ktword.co.kr/abbr_view.php?m_temp1=3790&id=902)
 
   * **일반 헤더(General-header)** : 요청이나 응답 모두에 적용할 수 있는 헤더
