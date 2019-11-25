@@ -7,7 +7,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="46343e17-20e8-43f3-ae71-8e7649d9cd09" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../webprogrammingbasic/.idea/artifacts/webprogrammingbasic_war.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../webprogrammingbasic/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../webprogrammingbasic/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../webprogrammingbasic/out/production/webprogrammingbasic/META-INF/webprogrammingbasic.kotlin_module" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -38,12 +42,6 @@
     <option name="FILTER_INFO" value="true" />
     <option name="FILTER_DEBUG" value="true" />
     <option name="CUSTOM_FILTER" />
-  </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="1280" />
-    <option name="y" value="23" />
-    <option name="width" value="1280" />
-    <option name="height" value="1417" />
   </component>
   <component name="ProjectId" id="1Pjt7PnfZ4wT2eKiz9HPa4yCA5W" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -163,11 +161,23 @@
       <workItem from="1566224726646" duration="5296000" />
       <workItem from="1566314357909" duration="5969000" />
       <workItem from="1566399172381" duration="9000" />
+      <workItem from="1574684232905" duration="754000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="masterDetails">
     <states>

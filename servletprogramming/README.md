@@ -174,7 +174,7 @@ public class HelloWorld implements Servlet {
 }
 ```
 
-<br/>
+<br>
 
 ## 3.4.2. javax.servlet.Servlet 인터페이스
 
@@ -182,7 +182,7 @@ public class HelloWorld implements Servlet {
 
 <img src="../capture/스크린샷 2019-08-21 오전 12.29.08.png" width=700>
 
-<br/>
+<br>
 
 ### 서블릿의 생명주기와 관련된 메서드: init(), service(), destroy()
 
@@ -298,17 +298,7 @@ web.xml 파일을 **배치 기술서(Deployment Descriptor, DD)** 라고 부른�
 
 ## 3.4.6. 서블릿 구동 절차
 
-```sequence
-웹 서버->서블릿 컨테이너: (1) 요청
-서블릿 컨테이너->Hello World: (2) 서블릿 인스턴스가 없다면, 클래스로딩
-서블릿 컨테이너->Hello World: 인스턴스 생성
-서블릿 컨테이너->Hello World: 생성자 호출
-서블릿 컨테이너->Hello World: init() 호출
-서블릿 컨테이너->Hello World: (3) service() 호출
-서블릿 컨테이너->웹 서버: (4) 응답
-웹 서버->서블릿 컨테이너: (5) 컨테이너 종료
-서블릿 컨테이너->Hello World: (6) destroy() 호출
-```
+<img src="../capture/스크린샷 2019-11-25 오후 9.11.43.png">
 
 > **서블릿 인스턴스는 하나만 생성되어 웹 애플리케이션이 종료될 때까지 사용된다.** 따라서 인스턴스 변수에 특정 사용자를 위한 데이터를 보관해서는 안된다. 또한, 클라이언트가 보낸 데이터를 일시적으로 보관하기 위해 서블릿의 인스턴스 변수를 사용해서도 안된다.
 
@@ -324,24 +314,24 @@ web.xml 파일을 **배치 기술서(Deployment Descriptor, DD)** 라고 부른�
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
-    <display-name>Apache-Axis</display-name>
+  <display-name>Apache-Axis</display-name>
 
-    <!-- 서블릿 선언 -->
-    <servlet>
-        <servlet-name>Hello</servlet-name>
-        <servlet-class>lesson03.servlets.HelloWorld</servlet-class>
-    </servlet>
+  <!-- 서블릿 선언 -->
+  <servlet>
+    <servlet-name>Hello</servlet-name>
+    <servlet-class>lesson03.servlets.HelloWorld</servlet-class>
+  </servlet>
 
-    <!-- 서블릿을 URL 과 연결 -->
-    <servlet-mapping>
-        <servlet-name>Hello</servlet-name>
-        <url-pattern>/Hello</url-pattern>
-    </servlet-mapping>
+  <!-- 서블릿을 URL 과 연결 -->
+  <servlet-mapping>
+    <servlet-name>Hello</servlet-name>
+    <url-pattern>/Hello</url-pattern>
+  </servlet-mapping>
 
-    <!-- welcome 태그 추가 -->
-    <welcome-file-list>
-        <welcome-file>default.html</welcome-file>
-    </welcome-file-list>
+  <!-- welcome 태그 추가 -->
+  <welcome-file-list>
+    <welcome-file>default.html</welcome-file>
+  </welcome-file-list>
   ...
 ```
 
@@ -354,14 +344,14 @@ web.xml 파일을 **배치 기술서(Deployment Descriptor, DD)** 라고 부른�
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <title>환영합니다.</title>
-</head>
-<body>
-<h1>default.html</h1>
-<p>환영합니다.</p>
-</body>
+  </head>
+  <body>
+    <h1>default.html</h1>
+    <p>환영합니다.</p>
+  </body>
 </html>
 ```
 
