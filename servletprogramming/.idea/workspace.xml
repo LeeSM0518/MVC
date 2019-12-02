@@ -7,7 +7,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="46343e17-20e8-43f3-ae71-8e7649d9cd09" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/JAX_WS_Apache_Axis.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/JAX_WS_Apache_Axis.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -159,6 +159,7 @@
       <workItem from="1566399172381" duration="9000" />
       <workItem from="1574684232905" duration="754000" />
       <workItem from="1574830493113" duration="17000" />
+      <workItem from="1575285080973" duration="489000" />
     </task>
     <servers />
   </component>
