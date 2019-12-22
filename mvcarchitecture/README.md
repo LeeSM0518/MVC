@@ -215,13 +215,6 @@ JSP를 사용하면 HTML을 작성하기 쉬워지므로 **뷰 컴포넌트를 �
 * **web/hello.jsp**
 
   ```jsp
-  <%--
-    Created by IntelliJ IDEA.
-    User: sangminlee
-    Date: 10/09/2019
-      Time: 12:12 오전
-    To change this template use File | Settings | File Templates.
-        --%>
   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
   <html>
     <head>
@@ -232,10 +225,68 @@ JSP를 사용하면 HTML을 작성하기 쉬워지므로 **뷰 컴포넌트를 �
     </body>
   </html>
   ```
-
+  
 * **결과확인**
 
   <img src="../capture/스크린샷 2019-09-10 오전 12.16.28.png" width=500>
+  
+* **Hello_jsp.java (jsp 서블릿 파일)**
+
+  ```java
+  public final class Hello_jsp extends org.apache.jasper.runtime.HttpJspBase
+    implements org.apache.jasper.runtime.JspSourceDependent,
+  org.apache.jasper.runtime.JspSourceImports {
+  
+    ...
+  
+    public void _jspInit() {
+    }
+  
+    public void _jspDestroy() {
+    }
+  
+    public void _jspService(final javax.servlet.http.HttpServletRequest request, final javax.servlet.http.HttpServletResponse response)
+      throws java.io.IOException, javax.servlet.ServletException {
+  
+      ...
+  
+      final javax.servlet.jsp.PageContext pageContext;
+      javax.servlet.http.HttpSession session = null;
+      final javax.servlet.ServletContext application;
+      final javax.servlet.ServletConfig config;
+      javax.servlet.jsp.JspWriter out = null;
+      final java.lang.Object page = this;
+      javax.servlet.jsp.JspWriter _jspx_out = null;
+      javax.servlet.jsp.PageContext _jspx_page_context = null;
+  
+  
+      try {
+        response.setContentType("text/html;charset=UTF-8");
+        pageContext = _jspxFactory.getPageContext(this, request, response,
+                                                  null, true, 8192, true);
+        _jspx_page_context = pageContext;
+        application = pageContext.getServletContext();
+        config = pageContext.getServletConfig();
+        session = pageContext.getSession();
+        out = pageContext.getOut();
+        _jspx_out = out;
+  
+        out.write("\n");
+        out.write("<html>\n");
+        out.write("<head>\n");
+        out.write("    <title>Hello</title>\n");
+        out.write("</head>\n");
+        out.write("<body>\n");
+        out.write("<p>안녕하세요</p>\n");
+        out.write("</body>\n");
+        out.write("</html>\n");
+      } catch (java.lang.Throwable t) {
+        ...
+    }
+  }
+  ```
+
+  > mac 기준 jsp 경로 :  ~/Library/Caches/IntelliJIdea2019.3/tomcat/Unnamed_mvcarchitecture/work/Catalina/localhost/ROOT/org/apache/jsp
 
 **JSP를 실행할 때 비로소 JSP 엔진은 서블릿을 만든다.** 즉, JSP가 직접 실행되는 것이 아니라 JSP로부터 만들어진 서블릿이 실행된다.
 
@@ -279,7 +330,7 @@ HttpJspBase는 톰캣 서버에서 제공하는 클래스이다. 이 클래스�
 
 <br>
 
-### JSP 내장 객체
+### JSP 내장 객체 (ex. Hello_jsp.java)
 
 **_jspService()의** 매개변수는 HttpServletRequest 와 HttpServletResponse 객체이다. doGet() 과 doPost() 의 매개변수와 같다. 다만, **매개변수의 이름은 반드시 request, response로 해야 한다.**
 
@@ -308,7 +359,19 @@ final java.lang.Object page = this;
 
 ### JSP 출력문
 
-HTML을 출력하고 싶으면 JSP에서는 그냥 출력할 내용을 작성하면 된다. 
+```jsp
+out.write("\n");
+out.write("<html>\n");
+out.write("<head>\n");
+out.write("    <title>Hello</title>\n");
+out.write("</head>\n");
+out.write("<body>\n");
+out.write("<p>안녕하세요</p>\n");
+out.write("</body>\n");
+out.write("</html>\n");
+```
+
+HTML을 출력하고 싶으면 JSP에서는 그냥 출력할 내용을 작성하면 된다.
 
 <br>
 
@@ -385,13 +448,6 @@ HTML을 출력하고 싶으면 JSP에서는 그냥 출력할 내용을 작성하
 * **web/calc/Calculator.jsp**
 
   ```jsp
-  <%--
-    Created by IntelliJ IDEA.
-    User: sangminlee
-    Date: 10/09/2019
-    Time: 12:12 오전
-    To change this template use File | Settings | File Templates.
-  --%>
   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
   <%
       String v1 = "";
@@ -460,7 +516,7 @@ HTML을 출력하고 싶으면 JSP에서는 그냥 출력할 내용을 작성하
       }
   %>
   ```
-
+  
 * **웹 브라우저에서 localhost:8080/calc/Calculator.jsp 를 주소창에 입력한다.**
 
 <img src="../capture/스크린샷 2019-09-10 오후 9.14.17.png" width=500>
@@ -642,6 +698,130 @@ JSP 페이지에서 스크립트릿 \<% %> 이나 표현식 \<%=%> 을 작성할
 
 <br>
 
+## 5.3.8. Calculator_jsp.java
+
+```java
+public final class Calculator_jsp extends org.apache.jasper.runtime.HttpJspBase
+  implements org.apache.jasper.runtime.JspSourceDependent,
+org.apache.jasper.runtime.JspSourceImports {
+
+  private String calculate(int a, int b, String op) {
+    int r = 0;
+
+    if ("+".equals(op)) {
+      r = a + b;
+    } else if ("-".equals(op)) {
+      r = a - b;
+    } else if ("*".equals(op)) {
+      r = a * b;
+    } else if ("/".equals(op)) {
+      r = a / b;
+    }
+
+    return Integer.toString(r);
+  }
+  
+  ...
+  
+  public void _jspService(final javax.servlet.http.HttpServletRequest request, final javax.servlet.http.HttpServletResponse response)
+    throws java.io.IOException, javax.servlet.ServletException {
+    
+    ...
+
+    final javax.servlet.jsp.PageContext pageContext;
+    javax.servlet.http.HttpSession session = null;
+    final javax.servlet.ServletContext application;
+    final javax.servlet.ServletConfig config;
+    javax.servlet.jsp.JspWriter out = null;
+    final java.lang.Object page = this;
+    javax.servlet.jsp.JspWriter _jspx_out = null;
+    javax.servlet.jsp.PageContext _jspx_page_context = null;
+
+
+    try {
+      response.setContentType("text/html;charset=UTF-8");
+      pageContext = _jspxFactory.getPageContext(this, request, response,
+                                                null, true, 8192, true);
+      _jspx_page_context = pageContext;
+      application = pageContext.getServletContext();
+      config = pageContext.getServletConfig();
+      session = pageContext.getSession();
+      out = pageContext.getOut();
+      _jspx_out = out;
+
+      out.write('\n');
+      out.write('\n');
+
+      String v1 = "";
+      String v2 = "";
+      String result = "";
+      String[] selected = {"", "", "", ""};
+
+      if (request.getParameter("v1") != null) {
+        v1 = request.getParameter("v1");
+        v2 = request.getParameter("v2");
+        String op = request.getParameter("op");
+
+        result = calculate(
+          Integer.parseInt(v1),
+          Integer.parseInt(v2),
+          op);
+
+        if ("+".equals(op)) {
+          selected[0] = "selected";
+        } else if ("-".equals(op)) {
+          selected[1] = "selected";
+        } else if ("*".equals(op)) {
+          selected[2] = "selected";
+        } else if ("/".equals(op)) {
+          selected[3] = "selected";
+        }
+      }
+
+      out.write("\n");
+      out.write("<html>\n");
+      out.write("<head>\n");
+      out.write("    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n");
+      out.write("    <title>계산기</title>\n");
+      out.write("</head>\n");
+      out.write("<body>\n");
+      out.write("<h2>JSP 계산기</h2>\n");
+      out.write("<form action=\"Calculator.jsp\" method=\"get\">\n");
+      out.write("    <input type=\"text\" name=\"v1\" size=\"4\" value=\"");
+      out.print(v1);
+      out.write("\">\n");
+      out.write("    <select name=\"op\">\n");
+      out.write("        <option value=\"+\" ");
+      out.print(selected[0]);
+      out.write(">+</option>\n");
+      out.write("        <option value=\"-\" ");
+      out.print(selected[1]);
+      out.write(">-</option>\n");
+      out.write("        <option value=\"*\" ");
+      out.print(selected[2]);
+      out.write(">*</option>\n");
+      out.write("        <option value=\"/\" ");
+      out.print(selected[3]);
+      out.write(">/</option>\n");
+      out.write("    </select>\n");
+      out.write("    <input type=\"text\" name=\"v2\" size=\"4\" value=\"");
+      out.print(v2);
+      out.write("\">\n");
+      out.write("    <input type=\"submit\" value=\"=\">\n");
+      out.write("    <input type=\"text\" size=\"8\" value=\"");
+      out.print(result);
+      out.write("\"><br>\n");
+      out.write("</form>\n");
+      out.write("</body>\n");
+      out.write("</html>\n");
+    } catch (java.lang.Throwable t) {
+     ...
+  }
+}
+```
+
+<br>
+
 # 5.4. 서블릿에서 뷰 분리하기
 
 - **뷰 컴포넌트 도입**
@@ -654,7 +834,7 @@ JSP 페이지에서 스크립트릿 \<% %> 이나 표현식 \<%=%> 을 작성할
 
 ## 5.4.1. 값 객체(VO) = 데이터 수송 객체(DTO)
 
-**'값 객체(value object)' 란** 데이터베이스에서 가져온 JSP 페이지에 전달하기 위한 정보를 담는 객체이다. 값 객체는 계층 간 또는 객체 간에 데이터 전달하는데 이용하므로 **'데이터 수송 객체(data transfer object)'** 라고도 부른다. 또한 값 객체는 업무영역(business domain)의 데이터를 표현하기 때문에 객체지향 분석 및 설계 분야에서는 **'도메인 객체(domain obejct)'** 라고도 한다.
+**'값 객체(VO: Value Object)' 란** 데이터베이스에서 가져온 JSP 페이지에 전달하기 위한 정보를 담는 객체이다. 값 객체는 계층 간 또는 객체 간에 데이터 전달하는데 이용하므로 **'데이터 수송 객체(DTO: Data Transfer Object)'** 라고도 부른다. 또한 값 객체는 업무영역(business domain)의 데이터를 표현하기 때문에 객체지향 분석 및 설계 분야에서는 **'도메인 객체(DO: Domain Obejct)'** 라고도 한다.
 
 - **값 객체**
 
@@ -674,11 +854,11 @@ JSP 페이지에서 스크립트릿 \<% %> 이나 표현식 \<%=%> 을 작성할
 
   <img src="../capture/스크린샷 2019-09-10 오후 10.31.08.png">
 
-  - 출력은 JSP에서 맡게 될 것이며 서블릿에서 준비한 데이터를 JSP 전달할 것이다.
+  - 출력은 JSP에서 맡게 될 것이며 서블릿에서 준비한 데이터를 JSP에 전달할 것이다.
 
 <br>
 
-## 5.4.3. 값 객체 생성
+## 5.4.3. 값 객체(VO) 생성
 
 값 객체 역할을 수행할 Member 클래스를 생성
 
@@ -761,6 +941,8 @@ JSP 페이지에서 스크립트릿 \<% %> 이나 표현식 \<%=%> 을 작성할
     ```java
     new Member().setNo(1).setName("홍길동").setEmail("hong@test.com");
     ```
+    
+    > 쉬운 코드 해석을 위해서
 
 <br>
 
@@ -785,8 +967,7 @@ MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코�
   import java.sql.*;
   import java.util.ArrayList;
   
-  // 서블릿을 만들고자 서블릿 어노테이션을 쓰고
-  // GenericServlet 을 상속받는다.
+  // 서블릿을 만들고자 서블릿 어노테이션을 쓴다.
   @WebServlet("/member/list")
   public class MemberListServlet extends HttpServlet {
   
@@ -846,14 +1027,39 @@ MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코�
     }
   }
   ```
-
-  - HTML 출력 코드 제거 (ex: out.println())
-
-  - JSP에 전달할 회원 목록 데이터를 준비한다.
-
+  
+- ServletContext 의 데이터
+  
+  * **web/WEB-INF/web.xml**
+  
+    ```xml
+      ...
+      <context-param>
+        <param-name>driver</param-name>
+        <param-value>org.postgresql.Driver</param-value>
+      </context-param>
+      <context-param>
+        <param-name>url</param-name>
+        <param-value>jdbc:postgresql://arjuna.db.elephantsql.com:5432/</param-value>
+      </context-param>
+      <context-param>
+      <param-name>username</param-name>
+        <param-value>****</param-value>
+    </context-param>
+      <context-param>
+        <param-name>password</param-name>
+        <param-value>****</param-value>
+      </context-param>
+      ...
+    ```
+  
+- HTML 출력 코드 제거 (ex: out.println())
+  
+- JSP에 전달할 회원 목록 데이터를 준비한다.
+  
     ```java
     ArrayList<Member> members = new ArrayList<Member>();
-    while(rs.next()) {
+  while(rs.next()) {
       members.add(new Member()
                  .setNo(rs.getInt("mno"))
                  .setName(rs.getString("mname"))
@@ -861,24 +1067,24 @@ MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코�
                  .setCreatedDate(rs.getDate("cre_date")));
     }
     ```
-
+  
   - RequestDispatcher를 이용한 forward, include 사용, 회원 목록 데이터가 준비되었으면, 화면 생성을 위해 JSP로 작업을 위임해야 한다.
-
+  
     ```java
     ReqeustDispatcher rd = request.getRequestDispatcher(
                                       "/member/MemberList.jsp");
     rd.include(req, resp);
     ```
-
+  
     > RequestDispatcher를 얻을 때, 반드시 어떤 서블릿(또는 JSP)으로 위임할 것인지 알려 줘야 한다.
-
+  
   - ServletRequest(HttpServletRequest)를 통한 데이터를 전달한다. setAttribute()를 호출하여 값을 보관할 수 있고, getAttribute()를 호출하여 보관된 값을 꺼낼 수 있다.
-
+  
     ```java
     request.setAttribute("members", members);
     ```
-
-    > MemberListServlet의 request 객체는 MemberList.jsp 와 공유하기 때문에, request에 값을 담아 두면 MemberList.jsp 에서 써내 쓸 수 있다.
+  
+    > MemberListServlet의 request 객체는 MemberList.jsp 와 공유하기 때문에, request에 값을 담아 두면 MemberList.jsp 에서 꺼내 쓸 수 있다.
 
 <br>
 
@@ -889,13 +1095,6 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
 - **web/member/MemberList.jsp**
 
   ```jsp
-  <%--
-    Created by IntelliJ IDEA.
-    User: sangminlee
-    Date: 10/09/2019
-      Time: 11:02 오후
-    To change this template use File | Settings | File Templates.
-        --%>
   <%@ page import="spms.vo.Member" %>
   <%@ page import="java.util.ArrayList" %>
   <%@ page contentType="text/html;charset=UTF-8" language="java" %>
@@ -921,9 +1120,9 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
     </body>
   </html>
   ```
-
+  
   - Member 클래스와 ArrayList 클래스를 사용해야 하므로 **import를 처리하는 page 지시자 추가**
-
+  
     ```jsp
     <%@ page import="spmps.vo.Member"%>
     <%@ page import="java.util.ArrayList"%>
@@ -935,21 +1134,21 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
     <%
     ArrayList<Member> members = (ArrayList<Memeber>)request.getAttribute("members");
     for(Member member : members) {
-    %>
+  %>
     ```
 
     > request로부터 회원 목록을 꺼내고 나서 반복문을 사용하여 회원 정보를 출력한다.
-
+  
   - 번호와 이름, 이메일, 등록일을 출력하기 위해 **JSP 표현식 \<%= %>을 사용한다.**
-
+  
     ```jsp
     <%=member.getNo()%>,
-    <a href="update?no=<%=member.getNo()%>"><%=member.getName()%></a>,
+  <a href="update?no=<%=member.getNo()%>"><%=member.getName()%></a>,
     <%=member.getEmail()%>,
-    <%=member.getCreatedDate()%>
+  <%=member.getCreatedDate()%>
     <a href="delete?no=<%=member.getNo()%>">[삭제]</a><br>
-    ```
-
+  ```
+  
   <br>
 
 ## 5.4.6. 회원 목록 테스트

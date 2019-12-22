@@ -12,6 +12,7 @@
     </resource-ref>
 
     <welcome-file-list>
+        <welcome-file>Hello.jsp</welcome-file>
         <welcome-file>auth.LogInForm.jsp</welcome-file>
     </welcome-file-list>
 
