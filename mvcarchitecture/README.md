@@ -22,11 +22,56 @@
 
 <img src="../capture/스크린샷 2019-09-09 오후 10.43.01.png">
 
+* **예시) MemberUpdateServlet.java (회원 상세 정보 출력하는 서블릿)**
+
+  ```java
+  public class MemberUpdateServlet extends HttpServlet {
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      // 요청 데이터 처리
+      String query = "select mno, email, mname, cre_date from members" +
+        " where mno= " + req.getParameter("no");
+  
+      ...
+  
+        // 비즈니스 로직 및 데이터 처리
+        try (Connection connection = DriverManager.getConnection(
+          this.getInitParameter("url"),
+          this.getInitParameter("username"),
+          this.getInitParameter("password"));
+             PreparedStatement preparedStatement = connection.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+          resultSet.next();
+  
+          resp.setContentType("text/html; charset=UTF-8");
+          PrintWriter out = resp.getWriter();
+  
+          // 결과 화면(html) 생성
+          out.println("<html><head><title>회원정보</title></head>");
+          out.println("<form action='update' method='post'>");
+          out.println("번호: <input type='text' name='no' value='" + req.getParameter("no") + "'readonly><br>");
+          out.println("이름: *<input type='text' name='name' value='" + resultSet.getString("mname") +
+                      "'><br>");
+          out.println("이메일: <input type='text' name='email' value='" + resultSet.getString("email") +
+                      "'><br>");
+          out.println("가입일: " + resultSet.getDate("cre_date") + "<br>");
+          out.println("<input type='submit' value='저장'>");
+          out.println("<input type='button' value='취소' onclick='location.href=\"list\"'>");
+          out.println("</form>");
+          out.println("</body></html>");
+        } catch (Exception e) {
+          throw new ServletException(e);
+        }
+    }
+  }
+  ```
+
 <br>
 
-이러한 올인원의 장점은 하나에 모든 기능이 들어가 있어서 크기를 작게 만들 수 있으나, 단점은 특정 한 곳이 고장이 나면 전체를 고쳐야 되므로 불편합니다.
+이러한 올인원의 장점은 하나에 모든 기능이 들어가 있어서 **크기를 작게 만들 수 있으나,** 단점은 특정 한 곳이 **고장이 나면 전체를 고쳐야** 되므로 불편합니다.
 
-그래서, 올인원 방식은 규모가 작거나 업무 변경이 많지 않은 경우에 적합하지만, 규모가 크거나 업무 변경이 잦은 경우에는 오히려 유지 보수가 어려워 운영 비용이 증가하게 됩니다.
+그래서, 올인원 방식은 규모가 작거나 업무 변경이 많지 않은 경우에 적합하지만, 규모가 크거나 업무 변경이 잦은 경우에는 오히려 **유지 보수가 어려워 운영 비용이 증가하게 됩니다.**
 
 요즘처럼 글로벌 비즈니스 환경에서는 더더욱 올인원 방식은 적합하지 않습니다.
 
@@ -127,11 +172,11 @@ MVC 아키텍처에서 뷰 컴포넌트를 만들 때 보통 JSP를 사용한다
   }
   ```
 
-  * HTML을 출력하려고 out.println() 를 호출하고 있다. 출력하는 문자열에 태그 속성이 포함되어 있는데 인용 부호(' ')로 인해 코드가 더 복잡해 보인다.
+  * HTML을 출력하려고 out.println() 를 호출하고 있다. 출력하는 문자열에 태그 속성이 포함되어 있는데 인용 부호(' ')로 인해 **코드가 더 복잡해 보인다.**
 
 <br>
 
-그래서 많은 양의 HTML을 out.println()을 사용하여 출력한다면 거의 재앙이라 할 수 있다. 그래서 이런 부분을 해소하고자 나온 기술이 **JSP** 이다.
+그래서 많은 양의 HTML을 out.println()을 사용하여 출력한다면 거의 재앙이라 할 수 있다. 그래서 **이런 부분을 해소하고자 나온 기술이 JSP 이다.**
 
 <br>
 
