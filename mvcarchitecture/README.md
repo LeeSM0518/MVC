@@ -973,6 +973,7 @@ MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코�
   
     private ServletContext sc;
   
+    // DB 커넥션을 위한 드라이버 클래스를 미리 메모리(JVM)에 올리는 작업
     static {
       try {
         Class.forName("org.postgresql.Driver");
@@ -1027,12 +1028,12 @@ MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코�
     }
   }
   ```
-  
-- ServletContext 의 데이터
-  
-  * **web/WEB-INF/web.xml**
-  
-    ```xml
+
+  - ServletContext 의 데이터
+
+    * **web/WEB-INF/web.xml**
+
+      ```xml
       ...
       <context-param>
         <param-name>driver</param-name>
@@ -1042,24 +1043,24 @@ MemberListServlet 클래스에서 뷰 역할을 분리하기 위해 출력 코�
         <param-name>url</param-name>
         <param-value>jdbc:postgresql://arjuna.db.elephantsql.com:5432/</param-value>
       </context-param>
-      <context-param>
-      <param-name>username</param-name>
-        <param-value>****</param-value>
-    </context-param>
+    <context-param>
+        <param-name>username</param-name>
+      <param-value>****</param-value>
+      </context-param>
       <context-param>
         <param-name>password</param-name>
         <param-value>****</param-value>
       </context-param>
-      ...
-    ```
-  
-- HTML 출력 코드 제거 (ex: out.println())
-  
-- JSP에 전달할 회원 목록 데이터를 준비한다.
+    ...
+      ```
+
+  - HTML 출력 코드 제거 (ex: out.println())
+
+  - JSP에 전달할 회원 목록 데이터를 준비한다.
   
     ```java
-    ArrayList<Member> members = new ArrayList<Member>();
-  while(rs.next()) {
+  ArrayList<Member> members = new ArrayList<Member>();
+    while(rs.next()) {
       members.add(new Member()
                  .setNo(rs.getInt("mno"))
                  .setName(rs.getString("mname"))
@@ -1124,7 +1125,7 @@ MemberListServlet으로부터 받은 회원 목록 데이터를 가지고 화면
   - Member 클래스와 ArrayList 클래스를 사용해야 하므로 **import를 처리하는 page 지시자 추가**
   
     ```jsp
-    <%@ page import="spmps.vo.Member"%>
+    <%@ page import="spms.vo.Member"%>
     <%@ page import="java.util.ArrayList"%>
     ```
 
@@ -1230,7 +1231,7 @@ MemberListServlet 소스를 보면, 데이터베이스와 연동하여 작업하
 
 ### 예외 발생 테스트
 
-MySQL 데이터베이스 연결을 실패해본다.
+PostgreSql 데이터베이스 연결을 실패해본다.
 
 - **예외가 발생한 경우의 화면**
 
@@ -1299,7 +1300,7 @@ MemberList.jsp 에서 인클루딩을 이용하여 상단 내용을 출력하는
   </div>
   ```
 
-  - **\<div> 태그**
+  - **\<div> 태그** : 웹 사이트의 각각의 블록(공간)을 알맞게 배치할 때 사용
     - **style 속성** : 출력되는 내용의 모양을 정의
 
 <br>
@@ -1549,7 +1550,7 @@ HttpSession 객체는 클라이언트 당 한 개가 생성된다. 로그인되�
   3. LoginForm.jsp는 로그인 입력폼을 만들어 출력
   4. 사용자가 입력한 정보를 가지고 다시 '/auth/login' 서블릿을 POST 요청
   5. LoginServlet은 이메일과 암호가 일치하는 회원 정보를 데이터베이스에서 찾아서 값 객체 'Member'에 담는다. 또한 Member 객체를 HttpSession 객체에 보관한다. 만약 이메일과 암호가 일치하는 회원을 찾지 못한다면, LoginFail.jsp로 작업을 위임한다.
-  6. 로그인 성공시 회원 목록 페이지로 리다이렉트, 실패시 로그인 입력폼으로 리프래시
+  6. **로그인 성공시 회원 목록 페이지로 리다이렉트(/member/list) , 실패시 로그인 입력폼으로 리프래시(/auth/login)**
 
 <br>
 
@@ -1779,7 +1780,7 @@ LogInServlet에서 HttpSession 보관소에 저장한 Member 객체를 Header.js
     %>
     ```
 
-  - HttpSession 보관소에서 꺼낸 Member 객체로부터 이름을 알아내어 사용자 고르인 정보를 출력
+  - HttpSession 보관소에서 꺼낸 Member 객체로부터 이름을 알아내어 사용자 로그인 정보를 출력
 
     ```java
     <span style="float: right;">
@@ -1904,6 +1905,8 @@ JSP 페이지를 작성할 때, 가능한 자바 코드의 삽입을 최소화�
 
 JSP 액션을 사용하면 자바로 직접 코딩하는 것보다 빠르고 쉽게 원하는 기능을 작성할 수 있다.
 
+밑에서 나올 **자바 빈은** 디자이너 입장에서 해석하기 어려운 코드를 자바 빈을 통해 jsp 페이지에서 **디자인 부분과 로직 부분을 나눔으로써** 복잡한 자바 코드를 줄이고 프로그램의 재사용성을 증가시킨다.
+
 <br>
 
 **JSP 2.2 기준, JSP 액션 태그들**
@@ -2002,7 +2005,7 @@ if (members == null) {
 
 - **JSP 액션 태그와 업무의 분리**
 
-  <img src="https://t1.daumcdn.net/cfile/tistory/99B80B3359D1D5CA24">
+  <img src="../capture/스크린샷 2019-12-23 오후 8.09.31.png">
 
 <br>
 
@@ -3302,7 +3305,7 @@ MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 
    { /* 있으면 Member 객체 리턴, 없으면 null 리턴 */ }
    ```
 
-   - **src/spms/dao/MemberDao.java**
+   - src/spms/dao/MemberDao.java
 
      ```java
      package spms.dao;
@@ -3436,9 +3439,11 @@ MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 
 
      <br>
 
+   
+
 2. MemberAddServlet 클래스 변경 - MemberDao 의 insert()를 사용하여 회원 정보를 추가한다.
 
-   - **src/spms/servlets/MemberAddServlet.java**
+   - src/spms/servlets/MemberAddServlet.java
 
      ```java
      package spms.servlets;
@@ -3492,11 +3497,11 @@ MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 
      }
      ```
 
-   <b>
+   <br>
 
 3. MemberUpdateServlet 클래스 변경 - MemberDao 의 selectOne() 과 update()를 사용하여 회원 정보를 변경한다.
 
-   - **src/spms/servlets/MemberUpdateServlet.java**
+   - src/spms/servlets/MemberUpdateServlet.java
 
      ```java
      package spms.servlets;
@@ -3568,7 +3573,7 @@ MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 
 
 4. MemberDeleteServlet 클래스 변경 - MemberDao 의 delete()을 사용하여 회원 정보를 삭제 한다.
 
-   - **src/spms/servlets/MemberDeleteServlet.java**
+   - src/spms/servlets/MemberDeleteServlet.java
 
      ```java
      package spms.servlets;
@@ -3612,7 +3617,7 @@ MemberDao 는 selectList() 가 호출되기 전에, Connection 객체가 먼저 
 
 5. LogInServlet 클래스 변경 - MemberDao 의 exist() 메서드를 이용하여 사용자 인증을 처리한다.
 
-   - **src/spms/servlets/LogInServlet.java**
+   - src/spms/servlets/LogInServlet.java
 
      ```java
      package spms.servlets;

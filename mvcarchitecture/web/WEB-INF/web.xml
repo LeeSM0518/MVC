@@ -11,10 +11,10 @@
         <res-auth>Container</res-auth>
     </resource-ref>
 
-    <welcome-file-list>
-        <welcome-file>Hello.jsp</welcome-file>
-        <welcome-file>auth.LogInForm.jsp</welcome-file>
-    </welcome-file-list>
+<!--    <welcome-file-list>-->
+<!--        <welcome-file>Hello.jsp</welcome-file>-->
+<!--        <welcome-file>auth.LogInForm.jsp</welcome-file>-->
+<!--    </welcome-file-list>-->
 
     <context-param>
         <param-name>driver</param-name>
