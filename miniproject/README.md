@@ -19,7 +19,7 @@
   1. 웹 브라우저의 요청을 프런트 컨트롤러에서 받는다. 프런트 컨트롤러는 **VO 객체를 생성하여** 데이터를 담는다. 그리고 **ServletRequest 보관함에 VO 객체를 저장한다.** 요청 URL에 따라 **페이지 컨트롤러를 선택하여 실행 위임.**
   2. 페이지 컨트롤러는 **DAO를 사용하여 프런트 컨트롤러부터 받은 VO 객체를 처리**
   3. **DAO는** 페이지 컨트롤러로부터 받은 **데이터 처리**
-  4. 페이지 컨트롤러는 화면을 만들 때 사용할 **데이터 준비.** 그리고 JSP가 사용할 수 있도록 **ServletRequest 보관소에 저장.** 프턴트 컨트롤러에게 **화면 출력을 담당할 뷰 정보(JSP의 URL)를 반환**
+  4. 페이지 컨트롤러는 화면을 만들 때 사용할 **데이터 준비.** 그리고 JSP가 사용할 수 있도록 **ServletRequest 보관소에 저장.** 프런트 컨트롤러에게 **화면 출력을 담당할 뷰 정보(JSP의 URL)를 반환**
   5. 프런트 컨트롤러는 페이지 컨트롤러가 알려준 **JSP로 실행을 위임. 오류 발생시에는 '/Error.jsp'로 실행 위임.**
   6. **JSP는** 페이지 컨트롤러에서 준비한 데이터를 가지고 **화면을 생성하여 출력.** 프런트 컨트롤러는 웹 브라우저의 요청에 대한 응답을 완료.
 
@@ -74,10 +74,107 @@
 
 ## 6.1.3. 프런트 컨트롤러 만들기
 
+* **이전의 5장에서 구현한 MemberUpdateServlet**
+
+  ```java
+  @WebServlet("/member/update")
+  public class MemberUpdateServlet extends HttpServlet {
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      ServletContext sc = this.getServletContext();
+      Connection conn = (Connection) sc.getAttribute("conn");
+  
+      try {
+        MemberDao memberDao = new MemberDao();
+        memberDao.setConnection(conn);
+        Member member = memberDao.selectOne(Integer.parseInt(req.getParameter("no")));
+        req.setAttribute("updateMember", member);
+  
+        RequestDispatcher rd = req.getRequestDispatcher("/member/MemberUpdate.jsp");
+        rd.forward(req, resp);
+      } catch (Exception e) {
+        e.printStackTrace();
+        req.setAttribute("error", e);
+        RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+        rd.forward(req, resp);
+      }
+    }
+  
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      ServletContext sc = this.getServletContext();
+      Connection conn = (Connection) sc.getAttribute("conn");
+  
+      try {
+        Member member = new Member();
+        member.setEmail(req.getParameter("email"))
+            .setName(req.getParameter("name"))
+            .setNo(Integer.parseInt(req.getParameter("no")));
+  
+        MemberDao memberDao = new MemberDao();
+        memberDao.setConnection(conn);
+        memberDao.update(member);
+  
+        resp.sendRedirect("list");
+      } catch (Exception e) {
+        e.printStackTrace();
+        req.setAttribute("error", e);
+        RequestDispatcher rd = req.getRequestDispatcher("/Error.jsp");
+        rd.forward(req, resp);
+      }
+    }
+  }
+  ```
+
+* **프런트 컨트롤러를 사용한 MemberUpdateServlet**
+
+  ```java
+  @WebServlet("/member/update")
+  public class MemberUpdateServlet extends HttpServlet {
+  
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      ServletContext sc = this.getServletContext();
+      MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+      try {
+        // 프런트 컨트롤러가 저장한 VO 객체를 이용
+        req.setAttribute("member", memberDao.selectOne(
+          Integer.parseInt(req.getParameter("no"))));
+        // 프런트 컨트롤러에게 뷰 정보를 전달
+        req.setAttribute("viewUrl", "/member/MemberUpdate.jsp");
+      } catch (Exception e) {
+        throw new ServletException(e);
+      }
+    }
+  
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      ServletContext sc = this.getServletContext();
+      try {
+        Member member = (Member) req.getAttribute("member");
+        MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
+        memberDao.update(member);
+  
+        // 프런트 컨트롤러에게 list로 리다이렉트 요청 url 전달
+        req.setAttribute("viewUrl", "redirect:list.do");
+      } catch (Exception e) {
+        throw new ServletException(e);
+      }
+    }
+  
+  }
+  ```
+
+> 훨씬 가독성이 좋아진 것을 확인할 수 있다.
+
+<br>
+
 * **src/spms/servlets/DispatcherServlet.java**
 
   ```java
   // 프런트 컨트롤러도 서블릿이기 때문에 HttpServlet 을 상속받는다.
+  // /member/list.do, /member/add.do 와 같이 .do 로 끝나는 모든 URL 요청은 이 서블릿을 거친다.
   @WebServlet("*.do")
   public class DispatcherServlet extends HttpServlet {
   
@@ -93,6 +190,7 @@
           pageControllerPath = "/member/list";
         } else if ("/member/add.do".equals(servletPath)) {
           pageControllerPath = "/member/add";
+          // get 요청과 post 요청을 구분하기 위한 if문 (예시를 통해 설명 필요)
           if (req.getParameter("email") != null) {
             req.setAttribute("member", new Member()
                 .setEmail(req.getParameter("email"))
@@ -337,7 +435,7 @@ public class DispatcherServlet extends HttpServlet {
 
     대신 Dao를 실행하다가 오류가 발생한다면, 기존의 오류를 ServletException 객체에 담아서 던지도록 하였다.
 
-    ```
+    ```java
     throw new ServletException(e);
     ```
 
@@ -733,6 +831,9 @@ throw new ServletException(e);
 
 프런트 컨트롤러를 도입하면 페이지 컨트롤러를 굳이 서블릿으로 만들어야 할 이유가 없다.
 
+* **예시) MemberAddServlet**
+  1. 처음에 신규 회원 버튼을 누르면 당연히 Member(회원) DTO 정보가 요청 정보에 담겨있지 않다. 즉 GET 요청과 POST 요청을 request에 저장되있는 DTO 객체의 데이터 유무를 통해 결정할 수 있다.
+
 **일반 클래스로 만들면 서블릿 기술에 종속되지 않기 때문에 재사용성이 더 높아진다.**
 
 <br>
@@ -745,8 +846,8 @@ throw new ServletException(e);
 
   <img src="../capture/스크린샷 2019-09-27 오전 1.56.00.png">
 
-  - 호출 규칙을 정의해 두면 그 규칙에 따라 클래스를 작성하고 호출하면 되기 때문에 일광성을 확보하고 유지보수에 도움이 된다.
-  - web.xml 파일에 등록할 필요가 없다.
+  - 호출 규칙을 정의해 두면 그 규칙에 따라 클래스를 작성하고 호출하면 되기 때문에 **일광성(객체지향의 다형성 사용)을** 확보하고 유지보수에 도움이 된다.
+  - web.xml 파일에 서블릿을 등록할 필요가 없다.
 
 <br>
 
@@ -754,13 +855,15 @@ throw new ServletException(e);
 
 프런트 컨트롤러와 페이지 컨트롤러 사이의 호출 규칙을 정의하기 위해서는 **인터페이스를** 사용해야 한다.
 
-**인터페이스는 사용자와 피사용자 사이의 일관성 있는 사용을 보장하기 위해** 만든 자바 문법이다.
+**인터페이스는 사용자와 피사용자 사이의 일관성 있는 사용을 보장하기 위해** 만든 자바 문법이다. 즉, **서블릿의 규격을 맞춰주는 작업이다.**
 
 <img src="../capture/스크린샷 2019-09-27 오전 11.17.04.png">
 
 <br>
 
 서블릿으로 작성된 모든 페이지 컨트롤러를 프런트 컨트롤러의 호출 규칙에 맞추어 일반 클래스로 전환한다.
+
+<br>
 
 ### *일반 클래스로 만든 페이지 컨트롤러의 사용 시나리오*
 
