@@ -832,7 +832,7 @@ throw new ServletException(e);
 프런트 컨트롤러를 도입하면 페이지 컨트롤러를 굳이 서블릿으로 만들어야 할 이유가 없다.
 
 * **예시) MemberAddServlet**
-  1. 처음에 신규 회원 버튼을 누르면 당연히 Member(회원) DTO 정보가 요청 정보에 담겨있지 않다. 즉 GET 요청과 POST 요청을 request에 저장되있는 DTO 객체의 데이터 유무를 통해 결정할 수 있다.
+  1. 처음에 신규 회원 버튼을 누르면 당연히 Member(회원) DTO 정보가 요청 정보에 담겨있지 않다. 원래는 서블릿을 상속해서 GET 메소드와 POST 메소드를 사용했으나 그럴 필요 없이 request에 저장되있는 DTO 객체의 데이터 유무를 통해 GET, POST를 구분할 수 있다.
 
 **일반 클래스로 만들면 서블릿 기술에 종속되지 않기 때문에 재사용성이 더 높아진다.**
 
@@ -1381,7 +1381,7 @@ MemberListController가 작업을 수행하려면 데이터베이스로부터 �
 
 ## 6.3.2. 의존 객체를 외부에서 주입
 
-초창기 객체 지향 프로그래밍에서는 의존 객체를 직접 생성하였으나, 지금은 **의존 객체를 외부에서 주입받는 방식(Dependency Injection)으로** 바뀌게 된다.
+초창기 객체 지향 프로그래밍에서는 의존 객체를 직접 생성하였으나, 지금은 **의존 객체를 외부에서 주입받는 방식(DI, Dependency Injection)으로** 바뀌게 된다.
 
 * **빈 컨테이너와 의존 객체의 주입**
 
@@ -1402,6 +1402,7 @@ DataSource 객체를 MemberDao에서 직접 생성하는 것이 아니라 외부
 * **MemberDao에 DataSource를 주입하는 코드(src/spms/listeners/ContextLoaderListener.java)**
 
   ```java
+  // 리스너 클래스의 메소드
   public void contextInitialzed(ServletContextEvent event) {
     try {
       ServletContext sc = event.getServletContext();
@@ -1413,8 +1414,8 @@ DataSource 객체를 MemberDao에서 직접 생성하는 것이 아니라 외부
       MemberDao memberDao = new MemberDao();
       memberDao.setDataSource(ds);
       ...
-  ```
-
+```
+  
   * **contextInitialized()** : 웹 애플리케이션이 시작될 때 호출되는 메서드이다.
   * **setDataSource()** : MemberDao가 사용할 의존 객체인 'DataSource'를 주입하는 메소드
 
@@ -1492,6 +1493,8 @@ public MemberListController setMemberDao(MemberDao memberDao) {
       memberDao.setDataSource(ds);
   
       //      sc.setAttribute("memberDao", memberDao);
+      
+      // ServletContext에 미리 MemberDao가 주입된 컨트롤러들을 저장해놓는다.
       sc.setAttribute("/auth/login.do",
                       new LogInController().setMemberDao(memberDao));
       sc.setAttribute("/auth/logout.do",
@@ -1508,15 +1511,15 @@ public MemberListController setMemberDao(MemberDao memberDao) {
     } catch (Throwable e) {
       e.printStackTrace();
     }
-  }
+}
   ```
 
   * MemberDao 객체는 별도로 꺼내서 사용할 일이 없기 때문에 ServletContext에 저장하지 않는다.
-
+  
     ```java
-    sc.setAttribute("memberDao", memberDao);
+  sc.setAttribute("memberDao", memberDao);
     ```
-
+  
     <br>
 
 ### *페이지 컨트롤러 객체를 준비*
@@ -1541,6 +1544,27 @@ sc.setAttribute("/auth/login.do",
 ## 6.3.6. 프런트 컨트롤러의 변경
 
 페이지 컨트롤러 객체를 ContextLoaderListener 에서 준비했기 때문에 프런트 컨트롤러를 변경해야 한다.
+
+* **이전의 프런트 컨트롤러 DispatcherServlet.java**
+
+  ```java
+  ...
+  if ("/member/list.do".equals(servletPath)) {
+    pageController = new MemberListController();	// 페이지 컨트롤러를 생성해줘야만 했다
+  } else if ("/member/add.do".equals(servletPath)) {
+    pageController = new MemberAddController();
+    if (req.getParameter("email") != null) {
+      model.put("member", new Member()
+                .setEmail(req.getParameter("email"))
+                .setPassword(req.getParameter("password"))
+                .setName(req.getParameter("name")));
+    }
+  }
+  ...
+  ```
+
+
+<br>
 
 - **src/spms/servlets/DispatcherServlet.java의 일부분**
 
@@ -1602,6 +1626,33 @@ sc.setAttribute("/auth/login.do",
   <img src="../capture/스크린샷 2019-10-04 오후 9.10.29.png">
 
   * 의존 객체를 사용할 때 구체적으로 클래스 이름을 명시하는 대신에 **인터페이스를 사용하면,** 그 자리에 다양한 구현체를 놓을 수 있다.
+  
+  * MemberDao interface로 DAO 객체로부터 호출할 메소드들을 정의해놓는다. 그 다음 각기 다른 DBMS를 사용할 때는 그 DBMS의 해당되는 질의를 실행해서 똑같은 결과가 나오도록 MemberDao에 정의되어 있는 메서드들을 재정의하면 된다. 이로써, 캡슐화와 다형성이 구현됨.
+  
+    ```java
+    public interface MemberDao() {
+      List<Member> select();
+    }
+    
+    public class OracleMemberDao() {
+      List<Member> select() {
+        ...
+      }  
+    }
+    
+    public class MySqlMemberDao() {
+      List<Member> select() {
+        ...
+      }
+    }
+    
+    public class MemberListController() {
+      MemberDao memberDao = new OracleMemberDao();
+      memberDao.select();
+      memberDao = new MySqlMemberDao();
+      memberDao.select();
+    }
+    ```
 
 <br>
 
@@ -1655,7 +1706,7 @@ sc.setAttribute("/auth/login.do",
 
 # 6.4. 리플랙션 API를 이용하여 프런트 컨트롤러 개선하기
 
-프런트 컨트롤러의 코드의 중에서, 매개변수 값을 받아서 VO 객체를 생성하는 부분은 페이지 컨트롤러를 추가할 때마다 코드를 변경해야 되는 문제가 있다. 
+프런트 컨트롤러의 코드의 중에서, 매개변수 값을 받아서 VO 객체를 생성하는 부분은 페이지 컨트롤러를 추가할 때마다 코드를 변경해야 되는 문제가 있다.
 
 이번 절에서 **리플랙션 API를 활용하여** 인스턴스를 자동 생성하고, 메서드를 자동으로 호출할 것이다.
 
@@ -1668,7 +1719,7 @@ sc.setAttribute("/auth/login.do",
 <img src="../capture/스크린샷 2019-10-04 오후 9.44.43.png">
 
 1. 웹 브라우저에서 회원 등록 요청.
-2. 프런트 컨트롤러는 페이지 컨트롤러에게 필요한 데이터의 이름과 타입 정보를 담은 배열을 리턴받는다.
+2. 프런트 컨트롤러는 페이지 컨트롤러에게 필요한 데이터(Member 객체)의 이름과 타입 정보를 담은 배열을 리턴받는다.
 3. 프런트 컨트롤러는 ServletRequestDataBinder를 이용하여, 요청 매개변수로부터 페이지 컨트롤러가 원하는 형식의 값 객체를 만든다.
 4. 프런트 컨트롤러는 ServletRequestDataBinder가 만들어 준 값 객체를 Map에 저장한다.
 5. 프런트 컨트롤러는 페이지 컨트롤러의 execute()에 Map 객체를 매개변수로 하여 호출한다.
