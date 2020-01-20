@@ -1,5 +1,6 @@
 package spms.servlets;
 
+import org.apache.commons.dbcp2.PoolableConnection;
 import spms.dao.MemberDao;
 import spms.vo.Member;
 
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.sql.DataSource;
 import java.io.IOException;
 
 @WebServlet("/auth/login")
@@ -26,6 +28,8 @@ public class LogInServlet extends HttpServlet {
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     ServletContext sc = this.getServletContext();
+
+    DataSource
 
     try {
       MemberDao memberDao = (MemberDao) sc.getAttribute("memberDao");
