@@ -1414,8 +1414,7 @@ DataSource 객체를 MemberDao에서 직접 생성하는 것이 아니라 외부
       MemberDao memberDao = new MemberDao();
       memberDao.setDataSource(ds);
       ...
-```
-  
+  ```
   * **contextInitialized()** : 웹 애플리케이션이 시작될 때 호출되는 메서드이다.
   * **setDataSource()** : MemberDao가 사용할 의존 객체인 'DataSource'를 주입하는 메소드
 
@@ -1708,6 +1707,41 @@ sc.setAttribute("/auth/login.do",
 
 프런트 컨트롤러의 코드의 중에서, 매개변수 값을 받아서 VO 객체를 생성하는 부분은 페이지 컨트롤러를 추가할 때마다 코드를 변경해야 되는 문제가 있다.
 
+* **이전의 프런트 컨트롤러**
+
+  ```java
+  ...
+    try {
+      String pageControllerPath = null;
+  
+      if ("/member/list.do".equals(servletPath)) {
+        pageControllerPath = "/member/list";
+      } else if ("/member/add.do".equals(servletPath)) {
+        pageControllerPath = "/member/add";
+        if (req.getParameter("email") != null) {
+          // 프런트 컨트롤러가 DTO 객체를 미리 만들어서 담아놓음.
+          req.setAttribute("member", new Member()
+                           .setEmail(req.getParameter("email"))
+                           .setPassword(req.getParameter("password"))
+                           .setName(req.getParameter("name")));
+        }
+      }
+  ...
+  ```
+
+  * 위의 코드에서 만약 Member 클래스에서 Email 이라는 필드를 Username 으로 바꾼다면 코드를 변경해야하는 문제점이 있다.
+
+* **리플랙션 API를 적용한 프런트 컨트롤러**
+
+  ```java
+  ...
+    if (pageController instanceof DataBinding) {
+      // 아래의 메서드가 페이지 컨트롤러가 필요한 데이터를 만들어준다.
+      prepareRequestData(req, model, (DataBinding)pageController);
+    }
+  ...
+  ```
+
 이번 절에서 **리플랙션 API를 활용하여** 인스턴스를 자동 생성하고, 메서드를 자동으로 호출할 것이다.
 
 <br>
@@ -1729,6 +1763,8 @@ sc.setAttribute("/auth/login.do",
 ## 6.4.2. DataBinding 인터페이스 정의
 
 프런트 컨트롤러는 페이지 컨트롤러가 실행되기 전에 필요한 **데이터를 요청하는 것에 대해 호출 규칙을 정해놓아야 한다.**
+
+왜냐하면, 페이지 컨트롤러 마다 데이터 요청하는 방식이 다르면 프런트 컨트롤러에서는 각 페이지 컨트롤러의 데이터 요청 메소드를 
 
 프런트 컨트롤러는 이 규칙을 준수하기 위해 페이지 컨트롤러를 호출할 때만 VO 객체를 준비하면 된다.
 
