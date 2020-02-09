@@ -1,6 +1,6 @@
 
-# Created by https://www.gitignore.io/api/java,macos,intellij,java-web
-# Edit at https://www.gitignore.io/?templates=java,macos,intellij,java-web
+# Created by https://www.gitignore.io/api/macos,intellij,intellij+iml
+# Edit at https://www.gitignore.io/?templates=macos,intellij,intellij+iml
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
@@ -81,36 +81,64 @@ fabric.properties
 # *.ipr
 
 # Sonarlint plugin
-.idea/sonarlint
+.idea/**/sonarlint/
 
-### Java ###
-# Compiled class file
-*.class
+# SonarQube Plugin
+.idea/**/sonarIssues.xml
 
-# Log file
-*.log
+# Markdown Navigator plugin
+.idea/**/markdown-navigator.xml
+.idea/**/markdown-navigator/
 
-# BlueJ files
-*.ctxt
+### Intellij+iml ###
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# User-specific stuff
 
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
+# Generated files
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+# Sensitive or high-churn files
 
-### Java-Web ###
-## ignoring target file
-target/
+# Gradle
+
+# Gradle and Maven with auto-import
+# When using Gradle or Maven with auto-import, you should exclude module files,
+# since they will be recreated, and may cause churn.  Uncomment if using
+# auto-import.
+# .idea/modules.xml
+# .idea/*.iml
+# .idea/modules
+# *.iml
+# *.ipr
+
+# CMake
+
+# Mongo Explorer plugin
+
+# File-based project format
+
+# IntelliJ
+
+# mpeltonen/sbt-idea plugin
+
+# JIRA plugin
+
+# Cursive Clojure plugin
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+
+# Editor-based Rest Client
+
+# Android studio 3.1+ serialized cache file
+
+### Intellij+iml Patch ###
+# Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-249601023
+
+*.iml
+modules.xml
+.idea/misc.xml
+*.ipr
 
 ### macOS ###
 # General
@@ -140,4 +168,4 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# End of https://www.gitignore.io/api/java,macos,intellij,java-web
+# End of https://www.gitignore.io/api/macos,intellij,intellij+iml
