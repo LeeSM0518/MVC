@@ -18,6 +18,9 @@
     암호: <input type="password" name="password"><br>
     <input type="submit" value="추가">
     <input type="reset" value="취소">
+    {"name", "abc"},
+    {"email", "acvd"},
+    {"password",
 </form>
 </body>
 </html>

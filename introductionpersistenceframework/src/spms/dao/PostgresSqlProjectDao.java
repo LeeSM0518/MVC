@@ -29,7 +29,6 @@ public class PostgresSqlProjectDao implements ProjectDao {
   public int insert(Project project) throws Exception {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
       int count = sqlSession.insert("spms.dao.ProjectDao.insert", project);
-      sqlSession.commit();
       return count;
     }
   }
