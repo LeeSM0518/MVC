@@ -17,23 +17,6 @@
         <param-value>/WEB-INF/application-context.properties</param-value>
     </context-param>
 
-    <context-param>
-        <param-name>driver</param-name>
-        <param-value>org.postgresql.Driver</param-value>
-    </context-param>
-    <context-param>
-        <param-name>url</param-name>
-        <param-value>jdbc:postgresql://arjuna.db.elephantsql.com:5432/</param-value>
-    </context-param>
-    <context-param>
-        <param-name>username</param-name>
-        <param-value>fsmfppcj</param-value>
-    </context-param>
-    <context-param>
-        <param-name>password</param-name>
-        <param-value>opXwqwWLpezpFQHX6OWFl3mQW1xf0VqH</param-value>
-    </context-param>
-
     <servlet>
         <display-name>Apache-Axis Servlet</display-name>
         <servlet-name>AxisServlet</servlet-name>
@@ -79,4 +62,8 @@
         <extension>wsdl</extension>
         <mime-type>text/xml</mime-type>
     </mime-mapping>
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
 </web-app>
